@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { performDeleteRequest, performGetRequest, performPostRequest, performPutRequest, performPostRequest_FormData } from '../../../constants/axios-utils'
 import { API } from '../../../shared/API-end-points'
-import { clearStorage, multipleMassage, getStorage, hasValue, MyAlert, MyToast, responseHandler, setStorage } from '../../../Utils'
+import { clearStorage, multipleMassage, getStorage, hasValue, MyAlert, MyToast, responseHandler, setStorage, isCompletedTrip } from '../../../Utils'
 import RootNavigation from '../../../Navigation/RootNavigation';
 import { completed_trips_state, ride_status_state, ride_vehicle_state } from '../../user/userSlice';
 import { store } from '../../../redux/store';
@@ -30,21 +30,25 @@ export const searchRoutes = createAsyncThunk('master/searchRoutes', async (data,
 export const getJobDetails = createAsyncThunk('master/getJobDetails', async (data, { dispatch }) => {
     await performGetRequest(API.get_job_details + data.url).then((res) => {
         const apiResponse = responseHandler(res)
-        if (apiResponse?.data?.status === "IN PROGRESS") {
+        const status = apiResponse?.data?.status ?? null
+        const job_details = apiResponse?.data?.response ?? null
+        if (status === "IN PROGRESS") {
             setTimeout(() => {
                 dispatch(getJobDetails(data))
             }, 10000);
             return
         }
-        if (apiResponse?.data?.status === "FAILED") {
+        if (status === "FAILED") {
             dispatch(get_job_details_state({}))
             return
         }
         if (hasValue(apiResponse)) {
-            dispatch(get_job_details_state({
-                job_details: apiResponse?.data?.response ?? null
-            }))
-            RootNavigation.navigate("AvailableOptions", { itemData: data?.data?.itemData ?? {} })
+            if (hasValue(job_details)) {
+                dispatch(get_job_details_state({
+                    job_details: job_details
+                }))
+                RootNavigation.navigate("AvailableOptions", { itemData: data?.data?.itemData ?? {} })
+            }
         } else {
             dispatch(get_job_details_state({}))
         }
@@ -59,18 +63,30 @@ export const selectRoute = createAsyncThunk('master/selectRoute', async (data, {
         const apiResponse = responseHandler(res)
         if (hasValue(apiResponse)) {
             const select_route = apiResponse?.data ?? null
-            const completed_trips = data?.completed_trips ?? []
+            // const completed_trips = data?.completed_trips ?? []
+            let tmpCompleted_trips = []
+            if (hasValue(select_route)) {
+                if (Array.isArray(select_route) && select_route.length > 0) {
+                    select_route.forEach(element => {
+                        tmpCompleted_trips.push({
+                            ...element,
+                            status: "SELECTED"
+                        })
+                    });
+                } else {
+                    tmpCompleted_trips = [{
+                        ...select_route,
+                        status: "SELECTED"
+                    }]
+                }
+            }
             dispatch(select_route_state({
                 isLoading: true,
                 select_route: select_route,
                 select_route_item: data?.data ?? {}
             }))
-            // RootNavigation.navigate("SelectedJourneyDetails", { itemData: data?.data ?? {} })
-            dispatch(completed_trips_state(completed_trips))
-            dispatch(bookRide({
-                select_route: select_route,
-                completed_trips: completed_trips,
-            }))
+            dispatch(completed_trips_state(tmpCompleted_trips))
+            dispatch(confirmRide({}))
         } else {
             dispatch(select_route_state({}))
         }
@@ -80,125 +96,129 @@ export const selectRoute = createAsyncThunk('master/selectRoute', async (data, {
     })
 })
 export const confirmRide = createAsyncThunk('master/confirmRide', async (data, { dispatch }) => {
-    const confirm_ride = store?.getState()?.master?.confirm_ride ?? null
-    dispatch(confirm_ride_state({ isLoading: true, confirm_ride: confirm_ride }))
-    await performPostRequest(API.confirm_ride, data).then((res) => {
-        const apiResponse = responseHandler(res)
-        if (hasValue(apiResponse)) {
-            dispatch(ride_status_state({ ride_status: "RIDE_ASSIGNED" }))
-            dispatch(ride_vehicle_state({ ride_vehicle: data?.type ?? null }))
-            if (data?.type === "BUS") {
-                RootNavigation.navigate("TicketDetails", { itemData: apiResponse?.data ?? null })
-            } else {
-                RootNavigation.navigate("ConfirmedRide", {
-                    itemData: apiResponse?.data ?? null
-                })
-            }
-            dispatch(confirm_ride_state({
-                confirm_ride: apiResponse?.data ?? null
-            }))
-            dispatch(completed_trips_state(data))
-        } else {
-            dispatch(confirm_ride_state({}))
-        }
-    }).catch(error => {
-        const apiResponse = responseHandler(error.response);
-        dispatch(confirm_ride_state({}))
-    })
-})
-
-export const bookRide = createAsyncThunk('master/bookRide', async (data, { dispatch }) => {
     try {
-        console.log('bookRide');
-        console.log(data, 'data bookRide');
-        // const select_route = data?.select_route ?? []
-        // const completed_trips = data?.completed_trips ?? []
+        const confirm_ride = store?.getState()?.master?.confirm_ride ?? null
+        dispatch(confirm_ride_state({ isLoading: true, confirm_ride: confirm_ride }))
         const select_route = store?.getState()?.master?.select_route ?? null
+        const rides_status = store?.getState()?.master?.rides_status ?? null
         const completed_trips = store?.getState()?.user?.completed_trips ?? null
-        const region_data = store?.getState()?.master?.region_data ?? null
-        console.log(select_route, 'data select_route');
-        console.log(completed_trips, 'data completed_trips');
-
         if (hasValue(completed_trips) && completed_trips.length > 0) {
-            let item = null
+            let payloads = null
             for (let index = 0; index < completed_trips.length; index++) {
                 const element = completed_trips[index];
-                if (element.isBooked === 0) {
-                    item = element
+                if (element.status === "SELECTED") {
+                    payloads = element
                     break;
                 }
             }
-            console.log(item, 'item');
-            if (!hasValue(item)) {
+            for (let index = 0; index < completed_trips.length; index++) {
+                const element = completed_trips[index];
+                const element_first = completed_trips[0];
+                if (element_first.status === "SELECTED") {
+                    dispatch(setCurrentRoute(payloads))
+                    break;
+                } else if (element.status === "CONFIRMED" || element.status === "IN_PROGRESS") {
+                    dispatch(setCurrentRoute(payloads))
+                    break;
+                }
+            }
+            if (!hasValue(payloads)) {
                 return
             }
-            let payloads = select_route
-            if (select_route.length > 1) {
-                select_route.forEach(element => {
-                    if (item.id === element.id) {
-                        payloads = element
-                    }
-                });
-            }
-            dispatch(confirmRide(payloads))
-
-
-            console.log(payloads, 'payloads');
-
-            // set current route
-            let startLocation = item?.start?.gps ?? ""
-            let start_data = startLocation.split(",")
-            let source_lat = parseFloat(start_data[0])
-            let source_lng = parseFloat(start_data[1])
-
-            let endLocation = item?.end?.gps ?? ""
-            let end_data = endLocation.split(",")
-            let end_lat = parseFloat(end_data[0])
-            let end_lng = parseFloat(end_data[1])
-            const tmp_routeCoordinates = [
-                {
-                    latitude: source_lat,
-                    longitude: source_lng,
-                    latitudeDelta: API.LATITUDE_DELTA,
-                    longitudeDelta: API.LONGITUDE_DELTA,
-                    icon: item?.type === "AUTO" ? Images.auto_marker : Images.bus_marker
-                },
-                {
-                    latitude: end_lat,
-                    longitude: end_lng,
-                    latitudeDelta: API.LATITUDE_DELTA,
-                    longitudeDelta: API.LONGITUDE_DELTA,
+            // dispatch(setCurrentRoute(payloads))
+            await performPostRequest(API.confirm_ride, payloads).then((res) => {
+                const apiResponse = responseHandler(res)
+                if (hasValue(apiResponse)) {
+                    dispatch(ridesStatus({
+                        navigate: "navigate",
+                        payloads: payloads,
+                        apiResponse: apiResponse?.data ?? null,
+                        data: data
+                    }))
+                    dispatch(ride_status_state({ ride_status: "RIDE_ASSIGNED" }))
+                    dispatch(ride_vehicle_state({ ride_vehicle: payloads?.type ?? null }))
+                    dispatch(confirm_ride_state({
+                        confirm_ride: apiResponse?.data ?? null
+                    }))
+                } else {
+                    dispatch(confirm_ride_state({}))
                 }
-            ]
-            console.log(tmp_routeCoordinates, 'tmp_routeCoordinates');
-            dispatch(current_ride_coordinates_state({
-                current_ride_coordinates: tmp_routeCoordinates
-            }))
-            dispatch(current_ride_region_state({
-                current_ride_region: {
-                    latitude: source_lat,
-                    longitude: source_lng,
-                    latitudeDelta: region_data?.latitudeDelta ?? API.LATITUDE_DELTA,
-                    longitudeDelta: region_data?.longitudeDelta ?? API.LONGITUDE_DELTA
-                }
-            }))
+            }).catch(error => {
+                const apiResponse = responseHandler(error.response);
+                dispatch(confirm_ride_state({}))
+            })
         }
+    } catch (error) {
+        const apiResponse = responseHandler(error);
+        dispatch(confirm_ride_state({}))
+    }
+})
+
+export const setCurrentRoute = createAsyncThunk('master/setCurrentRoute', async (data, { dispatch }) => {
+    try {
+        const region_data = store?.getState()?.master?.region_data ?? null
+        let startLocation = ""
+        let endLocation = ""
+        if (hasValue(data?.fulfillment?.end?.location?.gps ?? "")) {
+            startLocation = data?.fulfillment?.start?.location?.gps ?? ""
+            endLocation = data?.fulfillment?.end?.location?.gps ?? ""
+        } else {
+            startLocation = data?.start?.gps ?? ""
+            endLocation = data?.end?.gps ?? ""
+        }
+
+        let start_data = startLocation.split(",")
+        let source_lat = parseFloat(start_data[0])
+        let source_lng = parseFloat(start_data[1])
+
+        let end_data = endLocation.split(",")
+        let end_lat = parseFloat(end_data[0])
+        let end_lng = parseFloat(end_data[1])
+        const tmp_routeCoordinates = [
+            {
+                latitude: source_lat,
+                longitude: source_lng,
+                latitudeDelta: API.LATITUDE_DELTA,
+                longitudeDelta: API.LONGITUDE_DELTA,
+                icon: data?.type === "AUTO" ? Images.auto_marker : Images.bus_marker
+            },
+            {
+                latitude: end_lat,
+                longitude: end_lng,
+                latitudeDelta: API.LATITUDE_DELTA,
+                longitudeDelta: API.LONGITUDE_DELTA,
+            }
+        ]
+        dispatch(current_ride_coordinates_state({
+            current_ride_coordinates: tmp_routeCoordinates
+        }))
+        dispatch(current_ride_region_state({
+            current_ride_region: {
+                latitude: source_lat,
+                longitude: source_lng,
+                latitudeDelta: region_data?.latitudeDelta ?? API.LATITUDE_DELTA,
+                longitudeDelta: region_data?.longitudeDelta ?? API.LONGITUDE_DELTA
+            }
+        }))
     } catch (error) {
         console.log(error);
     }
 })
 export const cancelRide = createAsyncThunk('master/cancelRide', async (data, { dispatch }) => {
-    dispatch(common_state({ isLoading: true }))
+    dispatch(cancel_ride_state({ isLoadingCancel: true }))
     await performPostRequest(API.cancel_ride, data).then((res) => {
         const apiResponse = responseHandler(res)
         if (hasValue(apiResponse)) {
             RootNavigation.replace("Dashboard")
+            dispatch(getRideUpdates({
+                "cancel": "CANCELED"
+            }))
         }
         MyToast(apiResponse?.data?.message ?? "")
-        dispatch(common_state({}))
+        dispatch(cancel_ride_state({}))
     }).catch(error => {
         const apiResponse = responseHandler(error.response);
-        dispatch(common_state({}))
+        dispatch(cancel_ride_state({}))
     })
 })
 export const getHistory = createAsyncThunk('master/getHistory', async (data, { dispatch }) => {
@@ -219,6 +239,10 @@ export const getHistory = createAsyncThunk('master/getHistory', async (data, { d
 })
 export const addRating = createAsyncThunk('master/addRating', async (data, { dispatch }) => {
     dispatch(common_state({ isLoading: true }))
+    dispatch(rides_status_state({}))
+    dispatch(completed_trips_state({}))
+    dispatch(ride_updates_state({}))
+    dispatch(getRideUpdates({ "cancel": "CANCELED" }))
     await performPostRequest(API.rating, data).then((res) => {
         const apiResponse = responseHandler(res)
         if (hasValue(apiResponse)) {
@@ -233,11 +257,42 @@ export const addRating = createAsyncThunk('master/addRating', async (data, { dis
 })
 export const getRideUpdates = createAsyncThunk('master/getRideUpdates', async (data, { dispatch }) => {
     const ride_updates = store?.getState()?.master?.ride_updates ?? null
-    dispatch(ride_updates_state({ isLoading: true, ride_updates: ride_updates }))
+    const rides_status = store?.getState()?.master?.rides_status ?? null
+    dispatch(ride_updates_state({ isLoading: false, ride_updates: ride_updates }))
+    const cancel = data?.cancel ?? null
+    if (hasValue(cancel)) {
+        dispatch(ride_updates_state({}))
+        return
+    }
+    const ride_code = ride_updates?.descriptor?.code ?? null
+    if (ride_code === "RIDE_COMPLETED") {
+        return
+    }
     await performPostRequest(API.get_ride_updates, data).then((res) => {
         const apiResponse = responseHandler(res)
         if (hasValue(apiResponse)) {
-            dispatch(ride_updates_state({ ride_updates: apiResponse?.data?.descriptor ?? null }))
+            const code = apiResponse?.data?.descriptor?.code ?? null
+            dispatch(ride_updates_state({ ride_updates: apiResponse?.data ?? null }))
+            dispatch(ridesStatus({ isLoading: false }))
+
+            let rideStatus = "IN_PROGRESS"
+            if (hasValue(rides_status) && Array.isArray(rides_status) && rides_status.length > 0) {
+                rideStatus = rides_status[0].status
+            }
+            if (code != "RIDE_COMPLETED") {
+                setTimeout(() => {
+                    if (rideStatus != "CANCELLED") {
+                        dispatch(getRideUpdates(data))
+                    }
+                }, 30000);
+            }
+            // console.log(isCompletedTrip(), 'autoBook1');
+            if (code === "RIDE_IN_PROGRESS") {
+                if (isCompletedTrip()) {
+                    // console.log('autoBook2');
+                    dispatch(confirmRide({ data: "", autoBook: "autoBook" }))
+                }
+            }
         } else {
             dispatch(ride_updates_state({}))
         }
@@ -248,18 +303,53 @@ export const getRideUpdates = createAsyncThunk('master/getRideUpdates', async (d
     })
 })
 export const ridesStatus = createAsyncThunk('master/ridesStatus', async (data, { dispatch }) => {
-    dispatch(rides_status_state({ isLoading: true }))
+    // const rides_status = store?.getState()?.master?.rides_status ?? null
+    dispatch(rides_status_state({ isLoading: data?.isLoading ?? true }))
     await performGetRequest(API.rides_status, data).then((res) => {
         const apiResponse = responseHandler(res)
         if (hasValue(apiResponse)) {
             dispatch(rides_status_state({ rides_status: apiResponse?.data ?? null }))
+            dispatch(completed_trips_state(apiResponse?.data[0]?.details ?? []))
+
+            const is_navigate = data?.navigate ?? null
+            if (hasValue(is_navigate)) {
+                const ride_type = data?.payloads?.type ?? null
+                if (ride_type === "BUS") {
+                    if (!hasValue(data?.data?.autoBook ?? null)) {
+                        RootNavigation.navigate("TicketDetails", { itemData: data?.apiResponse ?? null })
+                    }
+                } else {
+                    dispatch(ride_updates_state({}))
+                    RootNavigation.navigate("ConfirmedRide", {
+                        itemData: data?.apiResponse ?? null
+                    })
+                }
+            }
         } else {
             dispatch(rides_status_state({}))
+            dispatch(completed_trips_state({}))
         }
         MyToast(apiResponse?.data?.message ?? "")
     }).catch(error => {
         const apiResponse = responseHandler(error.response);
         dispatch(rides_status_state({}))
+        dispatch(completed_trips_state({}))
+    })
+})
+export const busStatus = createAsyncThunk('master/busStatus', async (data, { dispatch }) => {
+    dispatch(bus_status_state({ isLoading: true }))
+    await performPostRequest(API.bus_status, data).then((res) => {
+        const apiResponse = responseHandler(res)
+        dispatch(ridesStatus({}))
+        if (hasValue(apiResponse)) {
+            dispatch(bus_status_state({ bus_status: apiResponse?.data ?? null }))
+        } else {
+            dispatch(bus_status_state({}))
+        }
+        MyToast(apiResponse?.data?.message ?? "")
+    }).catch(error => {
+        const apiResponse = responseHandler(error.response);
+        dispatch(bus_status_state({}))
     })
 })
 
@@ -289,7 +379,9 @@ export const masterSlice = createSlice({
         history: [],
         select_route_item: {},
         ride_updates: null,
-        rides_status: null
+        rides_status: null,
+        bus_status: null,
+        isLoadingCancel: false,
     },
     reducers: {
         clear_master_state: (state, action) => {
@@ -353,6 +445,13 @@ export const masterSlice = createSlice({
             state.isLoading = action?.payload?.isLoading ?? false
             state.rides_status = action?.payload?.rides_status ?? null
         },
+        bus_status_state: (state, action) => {
+            state.isLoading = action?.payload?.isLoading ?? false
+            state.bus_status = action?.payload?.bus_status ?? null
+        },
+        cancel_ride_state: (state, action) => {
+            state.isLoadingCancel = action?.payload?.isLoadingCancel ?? false
+        },
     },
 })
 
@@ -371,5 +470,7 @@ export const {
     current_ride_region_state,
     history_state,
     ride_updates_state,
-    rides_status_state
+    rides_status_state,
+    bus_status_state,
+    cancel_ride_state,
 } = masterSlice.actions

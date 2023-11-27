@@ -19,15 +19,14 @@ function TicketDetails({ navigation, route }) {
     const ref = useRef();
     const dispatch = useDispatch()
     const responseDataMaster = useSelector(state => state.master)
-    const itemData = route.params?.itemData ?? "";
+    const itemData = route.params?.itemData ?? null;
     const confirm_ride = responseDataMaster?.confirm_ride ?? null
     const [source_location, set_source_location] = useState("");
     const [end_location, set_end_location] = useState("");
     const [ticketId, set_ticketId] = useState("");
-    console.log(confirm_ride, 'confirm_ride2233');
-    console.log(itemData, 'itemData');
     const [modalCancel, set_modalCancel] = useState(false);
     const [cancelReason, set_cancelReason] = useState("");
+    const [ticketDetail, setTicketDetail] = useState({});
     const [source_lat_lng, set_source_lat_lng] = useState({
         latitude: API.LATITUDE,
         longitude: API.LONGITUDE,
@@ -40,7 +39,6 @@ function TicketDetails({ navigation, route }) {
         latitudeDelta: API.LATITUDE_DELTA,
         longitudeDelta: API.LONGITUDE_DELTA,
     });
-
     // useEffect(() => {
     //     // on mount
     //     ref.current.capture().then(uri => {
@@ -50,23 +48,45 @@ function TicketDetails({ navigation, route }) {
 
     useEffect(() => {
         try {
+            if (hasValue(itemData)) {
+                setTicketDetail(itemData)
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }, [itemData]);
+
+    useEffect(() => {
+        try {
             if (hasValue(confirm_ride)) {
-                const start_ward = confirm_ride?.fulfillment?.start?.location?.descriptor?.name ?? ""
-                const end_ward = confirm_ride?.fulfillment?.end?.location?.descriptor?.name ?? ""
-                set_source_location(start_ward)
-                set_end_location(end_ward)
-                set_ticketId(confirm_ride?.order_id ?? "")
-                setDestinationCoordinates()
+                setTicketDetail(confirm_ride)
             }
         } catch (error) {
             console.log(error);
         }
     }, [confirm_ride]);
+
+
+    useEffect(() => {
+        try {
+            if (hasValue(ticketDetail)) {
+                const start_ward = ticketDetail?.fulfillment?.start?.location?.descriptor?.name ?? ""
+                const end_ward = ticketDetail?.fulfillment?.end?.location?.descriptor?.name ?? ""
+                set_source_location(start_ward)
+                set_end_location(end_ward)
+                set_ticketId(ticketDetail?.order_id ?? "")
+                setDestinationCoordinates()
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }, [ticketDetail]);
+
     function setDestinationCoordinates() {
         try {
-            if (hasValue(confirm_ride)) {
-                const startLocation = confirm_ride?.fulfillment?.start?.location?.gps ?? ""
-                const endLocation = confirm_ride?.fulfillment?.end?.location?.gps ?? ""
+            if (hasValue(ticketDetail)) {
+                const startLocation = ticketDetail?.fulfillment?.start?.location?.gps ?? ""
+                const endLocation = ticketDetail?.fulfillment?.end?.location?.gps ?? ""
                 var start_data = startLocation.split(",")
                 var source_lat = parseFloat(start_data[0])
                 var source_lng = parseFloat(start_data[1])
@@ -92,17 +112,11 @@ function TicketDetails({ navigation, route }) {
             console.log(error);
         }
     }
+    console.log(ticketDetail, 'ticketDetail');
 
-    function onCall() {
-        try {
-            Linking.openURL(`tel:${"+911111111111"}`)
-        } catch (error) {
-            console.log(error);
-        }
-    }
     function downloadTicket() {
         try {
-            Linking.openURL(itemData?.qr ?? "");
+            Linking.openURL(ticketDetail?.qr ?? "");
         } catch (error) {
             console.log(error);
         }
@@ -117,7 +131,7 @@ function TicketDetails({ navigation, route }) {
     function onCancel() {
         try {
             set_modalCancel(false);
-            dispatch(cancelRide(confirm_ride))
+            dispatch(cancelRide(ticketDetail))
         } catch (error) {
             console.log(error);
         }
@@ -135,26 +149,27 @@ function TicketDetails({ navigation, route }) {
     }
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
+            {/* <Header navigation={navigation} hardwareBack={'check_rides'} left_press={'check_rides'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={"Your Bus Ticket Details"} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} /> */}
             <Header navigation={navigation} hardwareBack={'YourJourney'} left_press={'YourJourney'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={"Your Bus Ticket Details"} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} />
-            {/* <Header navigation={navigation} hardwareBack={"YourJourney"} left_press={"YourJourney"} height={HT(70)} card={false} style={[C.bgTrans]} label_center={STR.strings.ticket_details} /> */}
+            {/* <Header navigation={navigation} hardwareBack={"YourJourney"} left_press={"YourJourney"} height={HT(70)} card={false} style={[C.bgTrans]} label_center={"Your Bus Ticket Details"} /> */}
             {responseDataMaster.isLoading && <Loader isLoading={responseDataMaster.isLoading} />}
             {/* <ViewShot ref={ref} options={{ fileName: "Your-File-Name", format: "jpg", quality: 0.9 }}> */}
             <ScrollView>
-                <Image style={[WT(200), HT(200), L.asC, L.mT10]} source={hasValue(itemData?.qr ?? "") ? { uri: itemData.qr } : Images.qr_code} />
+                <Image style={[WT(200), HT(200), L.asC, L.mT10]} source={hasValue(ticketDetail?.qr ?? "") ? { uri: ticketDetail.qr } : Images.qr_code} />
                 <Text style={[C.fcBlack, F.ffM, F.fsOne8, L.taC, L.pH10, L.mT10]}>{STR.strings.ticket} 1/1</Text>
                 <Text style={[C.lColor, F.ffM, F.fsOne3, L.taC, L.pH10]}>{STR.strings.please_show_this_qr_code_to_the_conductor_to_enter_the_bus}</Text>
                 <View style={[WT('100%'), HT(3), C.bgLGray, L.mT25]} />
                 <View style={[WT('100%'), L.pH10, L.even, L.aiC, L.jcSB, L.pV15]}>
-                    <View style={[WT('45%')]}>
-                        <Text style={[C.lColor, F.ffB, F.fsOne5]}>Route No. NA</Text>
+                    <View style={[WT('60%')]}>
+                        <Text style={[C.lColor, F.ffB, F.fsOne5]}>Route No. {ticketDetail?.routeNo ?? ""}</Text>
                         <View style={[WT(100), HT(1.5), C.bgVLGray]} />
-                        <Text style={[C.lColor, F.ffM, F.fsOne2, L.mT2]}>Bus No. NA</Text>
+                        <Text style={[C.lColor, F.ffM, F.fsOne2, L.mT2]}>Bus No. {ticketDetail?.vehicleNo ?? ""}</Text>
                     </View>
-                    <View style={[WT('45%'), L.aiR]}>
+                    <View style={[WT('40%'), L.aiR]}>
                         <TouchableOpacity onPress={() => { openMap() }}>
                             <Image style={[WT(20), HT(20)]} source={Images.location} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => RootNavigation.navigate("TicketValid", { itemData: itemData })}>
+                        <TouchableOpacity onPress={() => RootNavigation.navigate("TicketValid", { itemData: ticketDetail })}>
                             <Text style={[C.fcBlue, F.ffM, F.fsOne2, L.mT2]}>Upcoming buses {" >"}</Text>
                         </TouchableOpacity>
                     </View>
@@ -187,25 +202,16 @@ function TicketDetails({ navigation, route }) {
                     <View style={[WT('35%'), L.aiR]}>
                         <Text style={[C.lColor, F.ffM, F.fsOne3]}>1</Text>
                         <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]} numberOfLines={1}>{ticketId}</Text>
-                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>NA</Text>
-                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>NA</Text>
-                        {/* <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{dateTime("", "", "hh:mma, DD-MMM-YYYY")}</Text>
-                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{dateTime("", "", "hh:mma, DD-MMM-YYYY")}</Text> */}
+                        {/* <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]} numberOfLines={1}>{ticketDetail?.validFrom ?? ""}</Text>
+                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]} numberOfLines={1}>{ticketDetail?.validTo ?? ""}</Text> */}
+                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{dateTime(ticketDetail?.validFrom ?? "", "", "hh:mm A, DD-MMM-YYYY")}</Text>
+                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{dateTime(ticketDetail?.validTo ?? "", "", "hh:mm A, DD-MMM-YYYY")}</Text>
                     </View>
                 </View>
                 <View style={[HT(200)]} />
             </ScrollView>
             {/* </ViewShot> */}
             <View style={[C.bgTrans, L.pH10, L.dpARL, C.bgScreen2]}>
-                {/* <TouchableOpacity onPress={() => { RootNavigation.replace("JourneyCompleted") }}
-                    style={[WT('100%'), HT(45), L.br05, C.brLightGray, L.bR5, L.jcC, L.aiC]}>
-                    <Text style={[C.fcBlack, F.ffB, F.fsOne5, L.taC]}>Home</Text>
-                </TouchableOpacity> */}
-                {/* <TouchableOpacity onPress={() => { RootNavigation.replace("BusJourney") }}
-                    style={[WT('100%'), HT(45), L.br05, C.brLightGray, L.bR5, L.jcC, L.aiC]}>
-                    <Text style={[C.fcBlack, F.ffB, F.fsOne5, L.taC]}>Bus Journey</Text>
-                </TouchableOpacity>
-                <View style={[HT(15)]} /> */}
                 <TouchableOpacity onPress={() => { downloadTicket() }}
                     style={[WT('100%'), HT(45), L.br05, C.brLightGray, L.bR5, L.jcC, L.aiC]}>
                     <Text style={[C.fcBlack, F.ffB, F.fsOne5, L.taC]}>{STR.strings.download}</Text>

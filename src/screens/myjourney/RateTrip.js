@@ -16,6 +16,7 @@ function RateTrip({ navigation, route }) {
     const dispatch = useDispatch()
     const responseDataMaster = useSelector(state => state.master)
     const confirm_ride = responseDataMaster?.confirm_ride ?? null
+    const rides_status = responseDataMaster?.rides_status ?? null
     const [description, set_description] = useState();
     const [is_checked, set_checked] = useState(false);
     const [order_rating, setOrder_rating] = useState(4);
@@ -74,24 +75,33 @@ function RateTrip({ navigation, route }) {
             console.log(error);
         }
     }, [order_rating]);
-    function onSubmit() {
+    function onSubmit(flag) {
         try {
-            const isFilled = listData.filter((element) => element.checked === true);
-            if (hasValue(isFilled) && isFilled.length === 0) {
-                MyToast(STR.strings.option_is_required);
-                return
-            }
-            console.log(listData, 'listData');
             let feedback = []
-            listData.forEach(element => {
-                if (element.checked) {
-                    feedback.push(element.label)
+            if (!hasValue(flag)) {
+                const isFilled = listData.filter((element) => element.checked === true);
+                if (hasValue(isFilled) && isFilled.length === 0) {
+                    MyToast(STR.strings.option_is_required);
+                    return
                 }
-            });
+                listData.forEach(element => {
+                    if (element.checked) {
+                        feedback.push(element.label)
+                    }
+                });
+            }
+            let routeId = ""
+            if (hasValue(confirm_ride?.routeId ?? "")) {
+                routeId = confirm_ride?.routeId ?? ""
+            } else if (hasValue(rides_status) && Array.isArray(rides_status) && rides_status.length > 0) {
+                routeId = rides_status[0].routeId
+            }
             dispatch(addRating({
-                "route_id": confirm_ride?.routeId ?? "",
-                "rating": order_rating,
-                "feedback": feedback
+                "routeId": routeId,
+                "rating": hasValue(flag) ? 0 : order_rating,
+                "feedback": feedback,
+                "comments": description,
+                "skip": hasValue(flag) ? true : false
             }))
         } catch (error) {
             console.log(error);
@@ -173,7 +183,7 @@ function RateTrip({ navigation, route }) {
                     <View style={[HT(50)]} />
                     <Button onPress={() => { onSubmit() }} style={[WT('100%'), HT(45)]} label={STR.strings.submit} />
                     <View style={[HT(15)]} />
-                    <TouchableOpacity onPress={() => { RootNavigation.replace("Dashboard") }} style={[HT(40), WT(100), L.asC, L.jcC, L.aiC]}>
+                    <TouchableOpacity onPress={() => { onSubmit("skip") }} style={[HT(40), WT(100), L.asC, L.jcC, L.aiC]}>
                         <Text style={[F.fsOne5, F.ffB, C.fcBlack, L.taC]}>{STR.strings.skip}</Text>
                     </TouchableOpacity>
                     <View style={[HT(250)]} />

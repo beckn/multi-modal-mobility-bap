@@ -12,7 +12,7 @@ import { API } from '../../shared/API-end-points';
 import MapViewDirections from 'react-native-maps-directions';
 import RootNavigation from '../../Navigation/RootNavigation';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { confirmRide, current_ride_coordinates_state, current_ride_region_state } from '../master/masterSlice';
+import { busStatus, confirmRide, current_ride_coordinates_state, getRideUpdates, current_ride_region_state, ridesStatus } from '../master/masterSlice';
 import { ride_status_state } from '../user/userSlice';
 STR = require('../../languages/strings');
 
@@ -22,7 +22,9 @@ function YourJourney({ navigation, route }) {
     const responseDataMaster = useSelector(state => state.master)
     const ride_vehicle = responseDataUser?.ride_vehicle ?? null
     const ride_status = responseDataUser?.ride_status ?? null
+    const rides_status = responseDataMaster?.rides_status ?? null
     const route_coordinates = responseDataMaster?.current_ride_coordinates ?? []
+    const ride_updates = responseDataMaster?.ride_updates?.descriptor ?? null
     const region_data = responseDataMaster?.current_ride_region ?? {
         latitude: API.LATITUDE,
         longitude: API.LONGITUDE,
@@ -30,6 +32,7 @@ function YourJourney({ navigation, route }) {
         longitudeDelta: API.LONGITUDE_DELTA,
     }
     const select_route = responseDataMaster?.select_route ?? null
+    const confirm_ride = responseDataMaster?.confirm_ride ?? null
     const completed_trips = responseDataUser?.completed_trips ?? []
     var mapRef = useRef(null);
     var markerRef = useRef(null);
@@ -37,49 +40,135 @@ function YourJourney({ navigation, route }) {
     const [headerLabel, setHeaderLabel] = useState("Your Journey");
     const [quantity, set_quantity] = useState(0);
     const [modalConfirm, set_modalConfirm] = useState(false);
+    const [rideDetails, setRideDetails] = useState({});
 
     useFocusEffect(
         React.useCallback(() => {
-            set_vehicleData(completed_trips)
+            dispatch(ridesStatus({}))
             return () => { };
-        }, [completed_trips]),
+        }, []),
     );
 
     useEffect(() => {
+        setJourneyData()
+    }, [rides_status]);
+
+    useEffect(() => {
+        setJourneyData()
+    }, [completed_trips]);
+
+    function setJourneyData() {
         try {
-            if (ride_vehicle === "AUTO") {
-                if (ride_status === "RIDE_STARTED") {
-                    setHeaderLabel("Your Journey is confirmed")
-                } else {
-                    setHeaderLabel("Your Journey")
-                }
-            } else {
-                if (ride_status === "RIDE_ASSIGNED") {
-                    setHeaderLabel("Bus journey is confirmed")
-                } else if (ride_status === "RIDE_STARTED") {
-                    setHeaderLabel("Bus journey has started")
-                } else if (ride_status === "RIDE_COMPLETED") {
-                    setHeaderLabel("Bus journey has Completed")
+            set_vehicleData(completed_trips)
+            if (hasValue(completed_trips) && completed_trips.length > 0) {
+                for (let index = 0; index < completed_trips.length; index++) {
+                    const element = completed_trips[index];
+                    if (element.status != "SELECTED") {
+                        setRideDetails(element)
+                        if (element.status === "CONFIRMED" || element.status === "COMPLETED" || element.status === "IN_PROGRESS") {
+                            onHeaderLabel(element)
+                            const type = element?.type ?? null
+                            const status = element?.status ?? null
+                            if (type === "BUS") {
+                                if (status === "CONFIRMED") {
+                                    set_quantity(0)
+                                }
+                                if (status === "IN_PROGRESS") {
+                                    set_quantity(1)
+                                }
+                                if (status === "COMPLETED") {
+                                    set_quantity(2)
+                                }
+                            }
+                            if (element.status === "IN_PROGRESS") {
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         } catch (error) {
             console.log(error);
         }
-    }, [ride_status]);
+    }
 
+    function onHeaderLabel(element) {
+        try {
+            const type = element?.type ?? null
+            const status = element?.status ?? null
+            const code = ride_updates?.code ?? null
+            if (type === "AUTO") {
+                // if (code === "RIDE_IN_PROGRESS") {
+                if (status === "IN_PROGRESS") {
+                    setHeaderLabel("Your Journey")
+                    // fetchRideStatus()
+                } else if (status === "CONFIRMED") {
+                    setHeaderLabel("Your Journey is confirmed")
+                    // fetchRideStatus()
+                } else if (status === "COMPLETED") {
+                    setHeaderLabel("Your Journey")
+                } else {
+                    setHeaderLabel("Your Journey")
+                }
+            } else {
+                if (status === "CONFIRMED") {
+                    setHeaderLabel("Your Journey is confirmed")
+                    if (quantity === 1) {
+                        setHeaderLabel("Bus journey has started")
+                    }
+                } else if (status === "COMPLETED") {
+                    setHeaderLabel("Bus journey has Completed")
+                } else if (status === "IN_PROGRESS") {
+                    setHeaderLabel("Bus journey has started")
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    function fetchRideStatus() {
+        try {
+            if (hasValue(rides_status)) {
+                if (hasValue(rides_status) && Array.isArray(rides_status) && rides_status.length > 0) {
+                    let payloads = {}
+                    for (let index = 0; index < rides_status[0].details.length; index++) {
+                        const element = rides_status[0].details[index];
+                        if (element.status != "SELECTED" && element.type === "AUTO") {
+                            payloads = element
+                            break;
+                        }
+                    }
+                    dispatch(getRideUpdates({
+                        "routeId": rides_status[0].routeId,
+                        "order_id": payloads?.order_id ?? ""
+                    }))
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
     function onItemPress(item) {
         try {
             if (item.type === "AUTO") {
-                if (item.isBooked === 1) {
-                    RootNavigation.navigate("RideCompleted")
+                if (item.status != "SELECTED") {
+                    if (item.status === "COMPLETED") {
+                        RootNavigation.navigate("RideCompleted", { itemData: item })
+                    } else {
+                        RootNavigation.navigate("ConfirmedRide", { itemData: item })
+                    }
                 } else {
-                    bookRide()
+                    onBookRide()
                 }
             } else {
-                if (item.isBooked === 1) {
-                    RootNavigation.navigate("TicketDetails")
+                if (item.status === "CONFIRMED") {
+                    RootNavigation.navigate("TicketDetails", { itemData: item })
+                } else if (item.status === "IN_PROGRESS") {
+                    RootNavigation.navigate("TicketDetails", { itemData: item })
+                } else if (item.status === "COMPLETED") {
+                    RootNavigation.navigate("TicketDetails", { itemData: item })
                 } else {
-                    bookRide()
+                    // onBookRide()
                 }
             }
 
@@ -87,10 +176,93 @@ function YourJourney({ navigation, route }) {
             console.log(error);
         }
     }
-    function bookRide() {
+
+    const renderItem = (item, index) => {
+        let image = item.type === "AUTO" ? Images.auto : Images.bus_full
+        let sub_title = ""
+        let showPrice = false
+        if (item.status === "SELECTED") {
+            sub_title = item.type === "AUTO" ? STR.strings.ride_not_started_yet : "Ticket not confirmed"
+        } else if (item.status === "CONFIRMED") {
+            sub_title = item.type === "AUTO" ? "Ride Confirmed" : "Ticket Confirmed"
+            showPrice = true
+        } else if (item.status === "IN_PROGRESS") {
+            sub_title = "Ride has Started"
+            showPrice = true
+        } else if (item.status === "COMPLETED") {
+            sub_title = "Ride Completed"
+            showPrice = true
+        } else if (item.status === "FAILED") {
+            sub_title = "Ride failed"
+        }
+        return (
+            <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
+                onPress={() => { onItemPress(item) }}>
+                <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
+                    <View style={[WT('50%'), L.even, L.aiC]}>
+                        <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
+                            <Image style={[HT(18), WT(18)]} source={image} />
+                        </View>
+                        <View style={[WT(8)]} />
+                        <View style={[]}>
+                            <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{item?.type ?? "NA"}</Text>
+                            <Text style={[C.lColor, F.ffM, F.fsOne2]}>{sub_title}</Text>
+                        </View>
+                    </View>
+                    <View style={[WT('50%'), L.aiR]}>
+                        {showPrice &&
+                            <Text style={[C.fcBlack, F.ffB, F.fsOne4]}
+                            >{hasValue(item?.price?.value ?? "") ? toFixed(item?.price?.value ?? "") != 0 ? "Rs " + toFixed(item?.price?.value ?? "") : "Rs " + item?.price?.value ?? "" : ""}</Text>
+                        }
+                    </View>
+                </View>
+            </TouchableOpacity>
+        )
+    }
+
+    function onSubmit(flag) {
+        try {
+            if (flag === 0) {
+                dispatch(ride_status_state({ ride_status: "RIDE_ASSIGNED" }))
+            } else if (flag === 1) {
+                dispatch(ride_status_state({ ride_status: "RIDE_STARTED" }))
+                for (let index = 0; index < vehicleData.length; index++) {
+                    const element = vehicleData[index];
+                    if (element.type === "BUS") {
+                        dispatch(busStatus({
+                            "routeId": rides_status[0].routeId,
+                            "order_id": element?.order_id ?? "",
+                            // "status": "RIDE_STARTED"
+                            "status": "RIDE_IN_PROGRESS"
+                        }))
+                        break;
+                    }
+                }
+            } else {
+                dispatch(ride_status_state({ ride_status: "RIDE_COMPLETED" }))
+                for (let index = 0; index < vehicleData.length; index++) {
+                    const element = vehicleData[index];
+                    if (element.type === "BUS") {
+                        dispatch(busStatus({
+                            "routeId": rides_status[0].routeId,
+                            "order_id": element?.order_id ?? "",
+                            "status": "RIDE_COMPLETED"
+                        }))
+                        break;
+                    }
+                }
+                onBookRide()
+            }
+            set_quantity(quantity + 1)
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    function onBookRide() {
         try {
             if (isCompletedTrip(0)) {
-                onBook()
+                // set_modalConfirm(true)
+                // dispatch(confirmRide({}))
             } else {
                 RootNavigation.replace("RateTrip")
             }
@@ -98,217 +270,11 @@ function YourJourney({ navigation, route }) {
             console.log(error);
         }
     }
-    function onBook() {
-        try {
-            set_modalConfirm(true)
-            if (hasValue(completed_trips) && completed_trips.length > 0) {
-                let item = null
-                for (let index = 0; index < completed_trips.length; index++) {
-                    const element = completed_trips[index];
-                    if (element.isBooked === 0) {
-                        item = element
-                        break;
-                    }
-                }
-                if (!hasValue(item)) {
-                    return
-                }
-                if (item.type === "BUS") {
-                    let payloads = select_route
-                    if (select_route.length > 1) {
-                        select_route.forEach(element => {
-                            if (item.id === element.id) {
-                                payloads = element
-                            }
-                        });
-                    }
-                    dispatch(confirmRide(payloads))
-                } else {
-                    if (select_route.length > 1) {
-                        select_route.forEach(element => {
-                            if (item.id === element.id) {
-                                dispatch(confirmRide(element))
-                            }
-                        });
-                    } else {
-                        dispatch(confirmRide(select_route))
-                    }
-                }
-                setCurrentRoutes(item)
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    function setCurrentRoutes(item) {
-        try {
-            let startLocation = item?.start?.gps ?? ""
-            let start_data = startLocation.split(",")
-            let source_lat = parseFloat(start_data[0])
-            let source_lng = parseFloat(start_data[1])
-
-            let endLocation = item?.end?.gps ?? ""
-            let end_data = endLocation.split(",")
-            let end_lat = parseFloat(end_data[0])
-            let end_lng = parseFloat(end_data[1])
-            const tmp_routeCoordinates = [
-                {
-                    latitude: source_lat,
-                    longitude: source_lng,
-                    latitudeDelta: API.LATITUDE_DELTA,
-                    longitudeDelta: API.LONGITUDE_DELTA,
-                    icon: item?.type === "AUTO" ? Images.auto_marker : Images.bus_marker
-                },
-                {
-                    latitude: end_lat,
-                    longitude: end_lng,
-                    latitudeDelta: API.LATITUDE_DELTA,
-                    longitudeDelta: API.LONGITUDE_DELTA,
-                }
-            ]
-            dispatch(current_ride_coordinates_state({
-                current_ride_coordinates: tmp_routeCoordinates
-            }))
-            dispatch(current_ride_region_state({
-                current_ride_region: {
-                    latitude: source_lat,
-                    longitude: source_lng,
-                    latitudeDelta: region_data?.latitudeDelta ?? API.LATITUDE_DELTA,
-                    longitudeDelta: region_data?.longitudeDelta ?? API.LONGITUDE_DELTA
-                }
-            }))
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    const renderItem = (item, index) => {
-        let image = Images.auto
-        let title = ""
-        let sub_title = ""
-        let showPrice = false
-        if (item.type === "AUTO") {
-            image = Images.auto
-            title = "Auto"
-            if (ride_vehicle === "AUTO") {
-                if (ride_status === "RIDE_ASSIGNED") {
-                    sub_title = "Ride Confirmed"
-                } else if (ride_status === "RIDE_STARTED") {
-                    sub_title = "Ride Confirmed"
-                } else if (ride_status === "RIDE_IN_PROGRESS") {
-                    sub_title = "Ride Started"
-                    showPrice = true
-                } else if (ride_status === "RIDE_COMPLETED") {
-                    sub_title = "Ride Completed"
-                    showPrice = true
-                } else {
-                    sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
-                    if (item.isBooked === 1) {
-                        showPrice = true
-                    }
-                }
-            } else {
-                sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
-                if (item.isBooked === 1) {
-                    showPrice = true
-                }
-            }
-        } else if (item.type === "BUS") {
-            image = Images.bus_full
-            title = "Bus"
-            if (ride_vehicle === "BUS") {
-                if (ride_status === "RIDE_ASSIGNED") {
-                    sub_title = "Ticket Confirmed"
-                } else if (ride_status === "RIDE_STARTED") {
-                    sub_title = "Bus ride started"
-                    showPrice = true
-                } else if (ride_status === "RIDE_COMPLETED") {
-                    sub_title = "Ride Completed"
-                    showPrice = true
-                } else {
-                    sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
-                    if (item.isBooked === 1) {
-                        showPrice = true
-                    }
-                }
-            } else {
-                sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
-                if (item.isBooked === 1) {
-                    showPrice = true
-                }
-            }
-        } else {
-            image = Images.bus_full
-            if (ride_vehicle === "BUS") {
-                if (ride_status === "RIDE_ASSIGNED") {
-                    sub_title = "Ticket Confirmed"
-                } else if (ride_status === "RIDE_STARTED") {
-                    sub_title = "Bus ride started"
-                    showPrice = true
-                } else if (ride_status === "RIDE_COMPLETED") {
-                    sub_title = "Ride Completed"
-                    showPrice = true
-                } else {
-                    sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
-                    if (item.isBooked === 1) {
-                        showPrice = true
-                    }
-                }
-            } else {
-                sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
-                if (item.isBooked === 1) {
-                    showPrice = true
-                }
-            }
-        }
-        return (
-            <>
-                {/*  <TouchableOpacity disabled={item.isBooked === 1 ? true : false} style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3, item.isBooked === 1 ? L.opc4 : L.opc1]} */}
-                <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
-                    onPress={() => { onItemPress(item) }}>
-                    <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
-                        <View style={[WT('12%')]}>
-                            <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
-                                <Image style={[HT(18), WT(18)]} source={image} />
-                            </View>
-                        </View>
-                        <View style={[WT('68%')]}>
-                            <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{title}</Text>
-                            <Text style={[C.lColor, F.ffM, F.fsOne2]}>{sub_title}</Text>
-                        </View>
-                        <View style={[WT('20%'), L.aiR]}>
-                            {showPrice &&
-                                <Text style={[C.fcBlack, F.ffB, F.fsOne4]} numberOfLines={1}
-                                >{hasValue(item?.price?.value ?? "") ? toFixed(item?.price?.value ?? "") != 0 ? "Rs " + toFixed(item?.price?.value ?? "") : "Rs " + item?.price?.value ?? "" : ""}</Text>
-                            }
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-            </>
-        )
-    }
-    console.log(quantity, 'quantity');
-    function onSubmit(flag) {
-        try {
-            console.log(flag, 'flag');
-            if (flag === 0) {
-                dispatch(ride_status_state({ ride_status: "RIDE_ASSIGNED" }))
-            } else if (flag === 1) {
-                dispatch(ride_status_state({ ride_status: "RIDE_STARTED" }))
-            } else {
-                dispatch(ride_status_state({ ride_status: "RIDE_COMPLETED" }))
-                bookRide()
-            }
-            set_quantity(quantity + 1)
-        } catch (error) {
-            console.log(error);
-        }
-    }
     function journeyLabel() {
         try {
-            let label = "Has you bus ride started?"
+            let label = "Has your bus ride started?"
             if (quantity === 0) {
-                label = "Has you bus ride started?"
+                label = "Has your bus ride started?"
             } else if (quantity === 1) {
                 label = "Has your bus ride ended?"
             } else {
@@ -316,14 +282,33 @@ function YourJourney({ navigation, route }) {
             }
             return label
         } catch (error) {
-            return "Has you bus ride started?"
+            return "Has you your ride started?"
         }
     }
+
+    function busBtn() {
+        try {
+            let status = false
+            const type = rideDetails?.type ?? null
+            const bus_status = rideDetails?.status ?? null
+            if (type === "BUS") {
+                if (bus_status === "CONFIRMED") {
+                    status = true
+                }
+                if (bus_status === "IN_PROGRESS") {
+                    status = true
+                }
+            }
+            return status
+        } catch (error) {
+            console.log(error);
+            return false
+        }
+    }
+    console.log(route_coordinates, 'route_coordinates');
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
             <Header navigation={navigation} hardwareBack={'Dashboard'} left_press={'Dashboard'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={headerLabel} />
-            {/* <Header navigation={navigation} hardwareBack={"progress_trip"} left_press={"progress_trip"} height={HT(70)} card={false} style={[C.bgTrans]} label_left={"Your Journey is completed"} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} /> */}
-            {/* <Header navigation={navigation} hardwareBack={"progress_trip"} left_press={"progress_trip"} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={"Your Journey is completed"} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} /> */}
             {responseDataMaster.isLoading && <Loader isLoading={responseDataMaster.isLoading} />}
             <ScrollView>
                 <View style={[WT('95%'), HT(300), L.asC, L.bR10, L.mT10, { overflow: 'hidden' }, L.card, L.br05, C.brLight]}>
@@ -382,7 +367,14 @@ function YourJourney({ navigation, route }) {
                 </View>
                 <View style={[HT(100)]} />
             </ScrollView>
-            {ride_vehicle === "BUS" && ride_status != "completed" &&
+            {/* <View style={[C.bgTrans, L.pH10, L.dpARL]}>
+                <TouchableOpacity onPress={() => { onBookRide() }}
+                    style={[WT('100%'), HT(45), L.br05, C.bgBlack, L.bR5, L.jcC, L.aiC]}>
+                    <Text style={[C.fcWhite, F.ffB, F.fsOne5, L.taC]}>Next</Text>
+                </TouchableOpacity>
+                <View style={[HT(15)]} />
+            </View> */}
+            {busBtn() &&
                 <View style={[C.bgWhite, L.card, C.brLight, L.br05, L.aiC, L.jcC, HT(150), L.dpARL, { bottom: 0 }]}>
                     <Text style={[C.fcBlack, F.ffM, L.taC, F.fsOne5]}>{journeyLabel()}</Text>
                     <View style={[HT(25)]} />

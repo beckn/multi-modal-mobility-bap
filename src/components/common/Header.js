@@ -7,7 +7,7 @@ import { Spinner, TouchableOpacity } from '../../components';
 import { C, F, L, WTD, HTD, HT, WT } from '../../commonStyles/style-layout';
 import { Images } from '../../commonStyles/Images';
 import RootNavigation from '../../Navigation/RootNavigation';
-import { hasValue, MyToast } from '../../Utils';
+import { hasValue, isCompletedTrip, MyToast } from '../../Utils';
 STR = require('../../languages/strings');
 
 class Header extends React.Component {
@@ -51,6 +51,8 @@ class Header extends React.Component {
                 this.onCancelTrip()
             } else if (flag == "progress_trip") {
                 return
+            } else if (flag == "check_rides") {
+                this.checkRides()
             } else {
                 RootNavigation.navigate(flag);
             }
@@ -68,6 +70,8 @@ class Header extends React.Component {
                 this.onCancelTrip()
             } else if (flag == "progress_trip") {
                 return
+            } else if (flag == "check_rides") {
+                this.checkRides()
             } else {
                 RootNavigation.navigate(flag);
             }
@@ -111,6 +115,17 @@ class Header extends React.Component {
             // const select_route = this.props.responseData.master?.select_route ?? null
             const confirm_ride = this.props.responseData.master?.confirm_ride ?? null
             this.props.cancelRide(confirm_ride)
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    checkRides() {
+        try {
+            if (isCompletedTrip("isMulti")) {
+                RootNavigation.navigate("YourJourney");
+            } else {
+                RootNavigation.replace("RateTrip")
+            }
         } catch (error) {
             console.log(error);
         }

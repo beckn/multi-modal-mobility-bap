@@ -8,7 +8,7 @@ import { C, F, HT, L, WT } from '../../commonStyles/style-layout';
 import { Header } from '../../components';
 import { changeLanguage } from '../user/userSlice';
 import { useSelector, useDispatch } from 'react-redux'
-import { getStorage, hasValue } from '../../Utils';
+import { dateTime, getStorage, hasValue } from '../../Utils';
 STR = require('../../languages/strings');
 
 function Splash({ navigation }) {

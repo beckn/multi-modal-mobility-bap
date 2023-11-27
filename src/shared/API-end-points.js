@@ -25,4 +25,5 @@ export const API = {
      rating: `${BASE_URL}/v1/modal/rating`,
      get_ride_updates: `${BASE_URL}/v1/modal/update`,
      rides_status: `${BASE_URL}/v1/modal/rides/status`,
+     bus_status: `${BASE_URL}/v1/modal/rides/bus/status`,
 }

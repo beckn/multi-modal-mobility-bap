@@ -12,6 +12,7 @@ import { dateTime, hasValue, toFixed } from '../../Utils';
 import { completed_trips_state } from '../user/userSlice';
 import { selectRoute } from '../master/masterSlice';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import moment from 'moment';
 STR = require('../../languages/strings');
 
 function AvailableOptions({ navigation, route }) {
@@ -75,7 +76,7 @@ function AvailableOptions({ navigation, route }) {
     }
     function setRoutes(item) {
         try {
-            let select_route = {}
+            let select_route = []
             if (item.type === "MULTI") {
                 select_route = item?.routes ?? []
             } else {
@@ -85,40 +86,47 @@ function AvailableOptions({ navigation, route }) {
                 let tmpArray = []
                 select_route.forEach((element, i) => {
                     let totalDuration = ""
+                    let etd = ""
+                    let eta = ""
                     if (element.type === "AUTO") {
-                        totalDuration = item.duration
+                        totalDuration = element.duration
                     } else if (item.type === "BUS") {
-                        totalDuration = item.duration
+                        totalDuration = element.duration
                     } else {
-                        totalDuration = item.totalDuration
+                        totalDuration = element.duration
                     }
                     const tmpTime = hasValue(totalDuration) ? parseInt(totalDuration) : 0
-                    console.log(tmpTime, 'tmpTime222222');
-                    let d1 = new Date()
-                    let d2 = new Date(d1);
-                    d2.setMinutes(d1.getMinutes() + tmpTime);
-                    const startTime = element?.startTime ?? dateTime(d2, "", "hh:mm A")
-                    console.log(d2, 'd2');
-                    console.log(startTime, 'startTime122');
+                    const startTime = element?.startTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
+
+                    etd = element?.startTime ?? moment().add(0, 'minutes').format('hh:mm A');
+                    eta = element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
+
                     let tmpJasonWalkStart = null
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
+                        const tmpTime_durationFromStartPoint = hasValue(element.durationFromStartPoint) ? parseInt(element.durationFromStartPoint) : 0
+                        let walk_eta = moment().add(tmpTime_durationFromStartPoint, 'minutes').format('hh:mm A')
+                        let walk_eta2 = moment().add(0, 'minutes').format('hh:mm A')
                         tmpJasonWalkStart = {
-                            address: element?.start?.address?.ward ?? element?.start?.name ?? "",
+                            address: element?.startPointAddress ?? "",
                             vehicle: {
                                 type: "Walk",
                                 number: ""
                             },
-                            distance: "NA",
-                            duration: "NA",
-                            // time: hasValue(element?.duration ?? "") ? element?.duration ?? "" : "NA",
-                            // wait_time: hasValue(element?.waitTimeUpto ?? "") ? element?.waitTimeUpto ?? "" : "NA",
-                            startTime: startTime,
-                            time: `ETD ${startTime}`,
+                            distance: element?.distanceFromStartPoint ?? "",
+                            duration: element?.durationFromStartPoint ?? "",
+                            etd: i === 0 ? walk_eta2 : walk_eta,
                             walkingDistanceFromStartPoint: element?.distanceFromStartPoint ?? "",
                             walkingDurationFromStartPoint: element?.durationFromStartPoint ?? "",
                             icon: Images.walking
                         }
                         tmpArray.push(tmpJasonWalkStart)
+                    }
+                    const tmpTime2 = hasValue(select_route[i - 1]?.duration ?? "") ? parseInt(select_route[i - 1].duration) : 0
+                    let eta2 = select_route[i - 1]?.endTime ?? moment().add(tmpTime2, 'minutes').format('hh:mm A')
+                    let walk_eta3 = ""
+                    if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
+                        const tmpTime_durationFromStartPoint = hasValue(element.durationFromStartPoint) ? parseInt(element.durationFromStartPoint) : 0
+                        walk_eta3 = moment().add(tmpTime_durationFromStartPoint, 'minutes').format('hh:mm A')
                     }
                     let tmpJasonStart = {
                         address: element?.start?.address?.ward ?? element?.start?.name ?? "",
@@ -128,11 +136,10 @@ function AvailableOptions({ navigation, route }) {
                         },
                         price: hasValue(element?.price?.value ?? "") ? toFixed(element?.price?.value ?? "") != 0 ? "Price " + toFixed(element?.price?.value ?? "") : "Price " + element?.price?.value ?? "" : "",
                         distance: element?.distance ?? "",
-                        duration: element?.duration ?? "",
+                        duration: element?.busTravelTime ?? element?.duration ?? "",
                         status: "",
-                        wait_time: element?.waitTimeUpto ?? "",
-                        startTime: startTime,
-                        time: `ETD ${startTime}`,
+                        etd: etd,
+                        eta: i != 0 ? eta2 : walk_eta3,
                         walkingDistanceFromStartPoint: hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 ? element.distanceFromStartPoint : "",
                         walkingDurationFromStartPoint: hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0 ? element.durationFromStartPoint : "",
                         icon: element?.type === "AUTO" ? Images.auto : Images.bus_full,
@@ -140,19 +147,17 @@ function AvailableOptions({ navigation, route }) {
                     tmpArray.push(tmpJasonStart)
                     let tmpJasonWalkEnd = null
                     if (hasValue(element?.distanceToEndPoint ?? "") && element.distanceToEndPoint != 0 && hasValue(element?.durationToEndPoint ?? "") && element.durationToEndPoint != 0) {
+                        const tmpTime_durationToEndPoint = hasValue(element.durationToEndPoint) ? parseInt(element.durationToEndPoint) : 0
+                        let walk_eta = moment().add(tmpTime_durationToEndPoint, 'minutes').format('hh:mm A')
                         tmpJasonWalkEnd = {
                             address: element?.end?.address?.ward ?? element?.end?.name ?? "",
                             vehicle: {
                                 type: "Walk",
                                 number: ""
                             },
-                            // endTime: element?.endTime ?? "",
-                            distance: "NA",
-                            duration: "NA",
-                            startTime: startTime,
-                            time: `ETA ${startTime}`,
-                            // time: hasValue(element?.duration ?? "") ? element?.duration ?? "" : "NA",
-                            // wait_time: hasValue(element?.waitTimeUpto ?? "") ? element?.waitTimeUpto ?? "" : "NA",
+                            distance: element?.distanceToEndPoint ?? "",
+                            duration: element?.durationToEndPoint ?? "",
+                            eta: element?.endTime ?? walk_eta,
                             walkingDistanceFromEndPoint: element?.distanceToEndPoint ?? "",
                             walkingDurationFromEndPoint: element?.durationToEndPoint ?? "",
                             icon: Images.walking
@@ -160,8 +165,13 @@ function AvailableOptions({ navigation, route }) {
                         tmpArray.push(tmpJasonWalkEnd)
                     }
                     if (select_route.length == i + 1) {
+                        let end_eta = eta
+                        if (hasValue(element?.distanceToEndPoint ?? "") && element.distanceToEndPoint != 0 && hasValue(element?.durationToEndPoint ?? "") && element.durationToEndPoint != 0) {
+                            const tmpTime_durationToEndPoint = hasValue(element.durationToEndPoint) ? parseInt(element.durationToEndPoint) : 0
+                            end_eta = moment(dateTime(eta, "hh:mm A", "")).add(tmpTime_durationToEndPoint, 'minutes').format('hh:mm A')
+                        }
                         let tmpJasonEnd = {
-                            address: element?.end?.address?.ward ?? element?.end?.name ?? "",
+                            address: hasValue(element?.distanceToEndPoint ?? "") ? element?.endPointAddress ?? "" : element?.end?.address?.ward ?? element?.end?.name ?? "",
                             vehicle: {
                                 type: element?.type ?? "",
                                 number: ""
@@ -170,10 +180,7 @@ function AvailableOptions({ navigation, route }) {
                             distance: element?.distance ?? "",
                             duration: element?.duration ?? "",
                             status: "",
-                            wait_time: element?.waitTimeUpto ?? "",
-                            endTime: element?.endTime ?? "",
-                            startTime: startTime,
-                            time: `ETA ${startTime}`,
+                            eta: end_eta,
                             walkingDistanceFromEndPoint: element?.distanceToEndPoint ?? "",
                             walkingDurationFromEndPoint: element?.durationToEndPoint ?? "",
                             icon: element?.type === "AUTO" ? Images.auto : Images.bus_full,
@@ -181,96 +188,6 @@ function AvailableOptions({ navigation, route }) {
                         tmpArray.push(tmpJasonEnd)
                     }
                 });
-                setTracking(tmpArray)
-                return tmpArray
-            } else {
-                let totalDuration = ""
-                if (select_route.type === "AUTO") {
-                    totalDuration = item.duration
-                } else if (item.type === "BUS") {
-                    totalDuration = item.duration
-                } else {
-                    totalDuration = item.totalDuration
-                }
-                const tmpTime = hasValue(totalDuration) ? parseInt(totalDuration) : 0
-                let d1 = new Date()
-                let d2 = new Date(d1);
-                d2.setMinutes(d1.getMinutes() + tmpTime);
-                const startTime = select_route?.startTime ?? dateTime(d2, "", "hh:mm A")
-                let tmpArray = []
-                let tmpJasonWalkStart = null
-                if (hasValue(select_route?.distanceFromStartPoint ?? "") && select_route.distanceFromStartPoint != 0 && hasValue(select_route?.durationFromStartPoint ?? "") && select_route.durationFromStartPoint != 0) {
-                    tmpJasonWalkStart = {
-                        address: select_route?.start?.address?.ward ?? select_route?.start?.name ?? "",
-                        vehicle: {
-                            type: "Walk",
-                            number: ""
-                        },
-                        distance: "",
-                        duration: "",
-                        time: `ETD ${startTime}`,
-                        walkingDistanceFromStartPoint: select_route?.distanceFromStartPoint ?? "",
-                        walkingDurationFromStartPoint: select_route?.durationFromStartPoint ?? "",
-                        icon: Images.walking
-                    }
-                    tmpArray.push(tmpJasonWalkStart)
-                }
-                let tmpJasonStart = {
-                    address: select_route?.start?.address?.ward ?? select_route?.start?.name ?? "",
-                    vehicle: {
-                        type: select_route?.type ?? "",
-                        number: ""
-                    },
-                    price: hasValue(select_route?.price?.value ?? "") ? toFixed(select_route?.price?.value ?? "") != 0 ? "Price " + toFixed(select_route?.price?.value ?? "") : "Price " + select_route?.price?.value ?? "" : "",
-                    distance: select_route?.distance ?? "",
-                    duration: select_route?.duration ?? "",
-                    status: "",
-                    wait_time: select_route?.waitTimeUpto ?? "",
-                    startTime: startTime,
-                    time: `ETD ${startTime}`,
-                    walkingDistanceFromStartPoint: hasValue(select_route?.distanceFromStartPoint ?? "") && select_route.distanceFromStartPoint != 0 ? select_route.distanceFromStartPoint : "",
-                    walkingDurationFromStartPoint: hasValue(select_route?.durationFromStartPoint ?? "") && select_route.durationFromStartPoint != 0 ? select_route.durationFromStartPoint : "",
-                    icon: select_route?.type === "AUTO" ? Images.auto : Images.bus_full,
-                }
-                tmpArray.push(tmpJasonStart)
-                let tmpJasonEnd = {
-                    address: select_route?.end?.address?.ward ?? select_route?.end?.name ?? "",
-                    vehicle: {
-                        type: select_route?.type ?? "",
-                        number: ""
-                    },
-                    price: hasValue(select_route?.price?.value ?? "") ? toFixed(select_route?.price?.value ?? "") != 0 ? "Price " + toFixed(select_route?.price?.value ?? "") : "Price " + select_route?.price?.value ?? "" : "",
-                    distance: select_route?.distance ?? "",
-                    duration: select_route?.duration ?? "",
-                    status: "",
-                    time: select_route?.duration ?? "",
-                    wait_time: select_route?.waitTimeUpto ?? "",
-                    endTime: select_route?.endTime ?? "",
-                    startTime: startTime,
-                    time: `ETA ${startTime}`,
-                    walkingDistanceFromEndPoint: hasValue(select_route?.distanceToEndPoint ?? "") && select_route.distanceToEndPoint != 0 ? select_route.distanceToEndPoint : "",
-                    walkingDurationFromEndPoint: hasValue(select_route?.durationToEndPoint ?? "") && select_route.durationToEndPoint != 0 ? select_route.durationToEndPoint : "",
-                    icon: select_route?.type === "AUTO" ? Images.auto : Images.bus_full,
-                }
-                tmpArray.push(tmpJasonEnd)
-                let tmpJasonWalkEnd = null
-                if (hasValue(select_route?.distanceToEndPoint ?? "") && select_route.distanceToEndPoint != 0 && hasValue(select_route?.durationToEndPoint ?? "") && select_route.durationToEndPoint != 0) {
-                    tmpJasonWalkEnd = {
-                        address: select_route?.end?.address?.ward ?? select_route?.end?.name ?? "",
-                        vehicle: {
-                            type: "Walk",
-                            number: ""
-                        },
-                        distance: "",
-                        duration: "",
-                        startTime: startTime,
-                        time: `ETA ${startTime}`,
-                        walkingDistanceFromEndPoint: select_route?.distanceToEndPoint ?? "",
-                        walkingDurationFromEndPoint: select_route?.durationToEndPoint ?? "",
-                        icon: Images.walking
-                    }
-                    tmpArray.push(tmpJasonWalkEnd)
-                }
                 setTracking(tmpArray)
                 return tmpArray
             }
@@ -297,7 +214,6 @@ function AvailableOptions({ navigation, route }) {
             console.log(error);
         }
     }
-    console.log(listData, 'listData');
     const renderItem = (item, index) => {
         let itemData = {}
         let totalCost = ""
@@ -347,10 +263,7 @@ function AvailableOptions({ navigation, route }) {
             vehicleData.push(tmpJasonStart)
         }
         const tmpTime = hasValue(totalDuration) ? parseInt(totalDuration) : 0
-        let d1 = new Date()
-        let d2 = new Date(d1);
-        d2.setMinutes(d1.getMinutes() + tmpTime);
-        const estA = dateTime(d2, "", "hh:mm A")
+        const estA = moment().add(tmpTime, 'minutes').format('hh:mm A');
         return (
             <TouchableOpacity style={[C.bgWhite, WT('95%'), L.asC, L.mB10, L.bR4, L.pV10, L.jcC]}
                 onPress={() => onItemPress(item)}>
@@ -389,7 +302,7 @@ function AvailableOptions({ navigation, route }) {
                         <View style={[WT('33%'), L.jcC, L.aiR, L.pH5]}>
                             <View style={[L.pH10, L.pV2, C.bgLGray, L.aiC, L.jcC, L.bR4]}>
                                 <Text style={[F.fsOne2, F.ffM, C.pColor]}>{STR.strings.cost}</Text>
-                                <Text style={[F.fsOne5, F.ffB, C.lColor]} numberOfLines={1}>{totalCost}</Text>
+                                <Text style={[F.fsOne5, F.ffB, C.lColor]}>{totalCost}</Text>
                             </View>
                         </View>
                     </View>
@@ -439,7 +352,6 @@ function AvailableOptions({ navigation, route }) {
             </TouchableOpacity>
         )
     }
-    console.log(trackingData, 'trackingData');
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
             <Header navigation={navigation} hardwareBack={1} left_press={1} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} ic_left={Images.back} label_left={STR.strings.available_options} is_filter={true} />
@@ -495,14 +407,9 @@ function AvailableOptions({ navigation, route }) {
                                                     <Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.address ?? ""}</Text>
                                                 </View>
                                                 <Text style={[C.fcBlack, F.ffM, F.fsOne2]}>
-                                                    {index === 0 ?
-                                                        (<>
-                                                            {"ETD NA"}
-                                                        </>) :
-                                                        (<>
-                                                            {hasValue(element?.startTime ?? "") ? "ETA " + element?.startTime : ""}
-                                                        </>)
-                                                    }
+                                                    {hasValue(element?.eta ?? "") ? `ETA ${element?.eta}` : ""}
+                                                    {hasValue(element?.eta ?? "") && hasValue(element?.etd ?? "") && " | "}
+                                                    {hasValue(element?.etd ?? "") ? `ETD ${element?.etd}` : ""}
                                                 </Text>
                                             </View>
                                         </View>

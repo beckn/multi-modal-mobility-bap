@@ -44,7 +44,7 @@ function YourConfirmedJourney({ navigation, route }) {
                 setFilterData(filter_data)
                 let itemObj = {}
                 if (hasValue(select_route) && Array.isArray(select_route) && select_route.length > 0) {
-                    const is_find = completed_trips.find((element) => element.isBooked === 0);
+                    const is_find = completed_trips.find((element) => element.status === "SELECTED");
                     if (hasValue(is_find)) {
                         itemObj = is_find
                     } else {
@@ -255,18 +255,18 @@ function YourConfirmedJourney({ navigation, route }) {
         if (item.type === "AUTO") {
             image = Images.auto
             title = "Auto"
-            sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
+            sub_title = item.status != "SELECTED" ? "Ride Completed" : STR.strings.ride_not_started_yet
         } else if (item.type === "BUS") {
             image = Images.bus_full
             title = "Bus"
-            sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
+            sub_title = item.status != "SELECTED" ? "Ride Completed" : STR.strings.ride_not_started_yet
         } else {
             image = Images.bus_full
             title = "Bus"
-            sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
+            sub_title = item.status != "SELECTED" ? "Ride Completed" : STR.strings.ride_not_started_yet
         }
         return (
-            <TouchableOpacity disabled={item.isBooked === 1 ? true : false} style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3, item.isBooked === 1 ? L.opc4 : L.opc1]}
+            <TouchableOpacity disabled={item.status != "SELECTED" ? true : false} style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3, item.status != "SELECTED" ? L.opc4 : L.opc1]}
                 onPress={() => { onItemPress(item) }}>
                 <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
                     <View style={[WT('12%')]}>

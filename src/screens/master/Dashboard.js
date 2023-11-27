@@ -13,7 +13,8 @@ import Geolocation from '@react-native-community/geolocation';
 import { API } from '../../shared/API-end-points';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapViewDirections from 'react-native-maps-directions';
-import { region_state, ridesStatus, searchRoutes } from './masterSlice';
+import { region_state, ridesStatus, searchRoutes, rides_status_state, ride_updates_state, getRideUpdates } from './masterSlice';
+import { completed_trips_state } from '../user/userSlice';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import RootNavigation from '../../Navigation/RootNavigation';
 STR = require('../../languages/strings');
@@ -21,7 +22,7 @@ STR = require('../../languages/strings');
 function Dashboard({ navigation }) {
     const dispatch = useDispatch()
     const responseDataMaster = useSelector(state => state.master)
-    const ride_updates = responseDataMaster?.ride_updates ?? null
+    const ride_updates = responseDataMaster?.ride_updates?.descriptor ?? null
     const rides_status = responseDataMaster?.rides_status ?? null
     var mapRef = useRef(null);
     var markerRef = useRef(null);
@@ -63,6 +64,16 @@ function Dashboard({ navigation }) {
 
     useFocusEffect(
         React.useCallback(() => {
+            const code = ride_updates?.code ?? null
+            if (code === "RIDE_COMPLETED") {
+                dispatch(getRideUpdates({ "cancel": "CANCELED" }))
+            }
+            dispatch(rides_status_state({}))
+            dispatch(completed_trips_state({}))
+            dispatch(ride_updates_state({}))
+            setStartLocation("")
+            setEndLocation("")
+
             dispatch(ridesStatus({}))
             setModalRide(false)
             return () => { };
@@ -70,30 +81,45 @@ function Dashboard({ navigation }) {
     );
     useFocusEffect(
         React.useCallback(() => {
-            setModalRide(false)
-            const code = ride_updates?.code ?? ""
-            if (hasValue(rides_status) && rides_status.length > 0) {
-                const status = rides_status[0].status ?? null
-                if (status === "IN_PROGRESS" || status === "CONFIRMED") {
-                    const vehicleType = rides_status[0].details?.type ?? null
-                    if (vehicleType === "BUS") {
-                        setStartLocation(rides_status[0].details?.fulfillment?.start?.location?.descriptor?.name ?? "")
-                        setEndLocation(rides_status[0].details?.fulfillment?.end?.location?.descriptor?.name ?? "")
-                    } else {
-                        setStartLocation(rides_status[0].details?.fulfillment?.start?.location?.address?.ward ?? "")
-                        setEndLocation(rides_status[0].details?.fulfillment?.end?.location?.address?.ward ?? "")
-                    }
-                    setModalRide(true)
-                }
-            }
+            onCurrentRideStatus()
             return () => { };
         }, [rides_status]),
     );
 
+    function onCurrentRideStatus() {
+        try {
+            setModalRide(false)
+            setStartLocation("")
+            setEndLocation("")
+            const code = ride_updates?.code ?? ""
+            if (hasValue(rides_status) && rides_status.length > 0) {
+                const status = rides_status[0].status ?? null
+                const feedBackScreenDisplayed = rides_status[0].feedBackScreenDisplayed ?? null
+                if (status != "CANCELLED") {
+                    if (status === "IN_PROGRESS" || status === "CONFIRMED" || feedBackScreenDisplayed === false) {
+                        rides_status[0].details.forEach(element => {
+                            if (element.status != "SELECTED") {
+                                if (element.type === "BUS") {
+                                    setStartLocation(element?.fulfillment?.start?.location?.descriptor?.name ?? "")
+                                    setEndLocation(element?.fulfillment?.end?.location?.descriptor?.name ?? "")
+                                } else {
+                                    setStartLocation(element?.fulfillment?.start?.location?.address?.ward ?? "")
+                                    setEndLocation(element?.fulfillment?.end?.location?.address?.ward ?? "")
+                                }
+                            }
+                        });
+                        setModalRide(true)
+                    }
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     useEffect(() => {
         try {
             Geolocation.getCurrentPosition(async (pos) => {
-                console.log(pos, 'pos');
                 const crd = pos.coords;
                 const location_data = {
                     latitude: crd.latitude,
@@ -172,45 +198,6 @@ function Dashboard({ navigation }) {
     //     }, []),
     // );
 
-    function onPressZoomIn() {
-        try {
-            setRegion({
-                latitude: position.latitude,
-                longitude: position.longitude,
-                latitudeDelta: position.latitudeDelta * 10,
-                longitudeDelta: position.longitudeDelta * 10
-            })
-            setPosition({
-                latitudeDelta: region.latitudeDelta,
-                longitudeDelta: region.longitudeDelta,
-                latitude: region.latitude,
-                longitude: region.longitude,
-            });
-            mapRef.animateToRegion(position, 100);
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    function onPressZoomOut() {
-        try {
-            setRegion({
-                latitude: position.latitude,
-                longitude: position.longitude,
-                latitudeDelta: position.latitudeDelta / 10,
-                longitudeDelta: position.longitudeDelta / 10
-            })
-            setPosition({
-                latitudeDelta: region.latitudeDelta,
-                longitudeDelta: region.longitudeDelta,
-                latitude: region.latitude,
-                longitude: region.longitude,
-            });
-            mapRef.animateToRegion(position, 100);
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
     const renderItem = (item, index) => {
         return (
             <TouchableOpacity disabled={true} onPress={() => { set_selected_tab(item.id) }}
@@ -260,7 +247,6 @@ function Dashboard({ navigation }) {
     }
     function onSearchSelect(params) {
         try {
-            console.log(params, 'params');
             const location_data = params?.geometry?.location ?? null
             set_searchedData(params)
             set_modalSearch(false)
@@ -389,9 +375,12 @@ function Dashboard({ navigation }) {
             console.log(error);
         }
     }
-
     function onProceed() {
         try {
+            if (hasValue(start_location)) {
+                setModalRide(true)
+                return
+            }
             const source_lat = hasValue(source_lat_lng?.latitude ?? "") ? source_lat_lng.latitude.toString() : ""
             const source_lng = hasValue(source_lat_lng?.longitude ?? "") ? source_lat_lng.longitude.toString() : ""
             const destination_lat = hasValue(destination_lat_lng?.latitude ?? "") ? destination_lat_lng.latitude.toString() : ""
@@ -407,6 +396,18 @@ function Dashboard({ navigation }) {
                     destination_location: destination_location,
                 }
             }))
+
+            // dispatch(searchRoutes({
+            //     "data": {
+            //         "start": "19.9590949,73.84173609999999",
+            //         "end": "20.0089103,73.80779749999999",
+            //         "type": "ALL"
+            //     },
+            //     "itemData": {
+            //         "source_location": "Government Colony, Nashik, Maharashtra, India",
+            //         "destination_location": "2R55+H47, Adgaon Naka, Vaishnavi Park, Nashik, Maharashtra 422003, India"
+            //     }
+            // }))
         } catch (error) {
             console.log(error);
         }
@@ -427,12 +428,13 @@ function Dashboard({ navigation }) {
         try {
             setModalRide(false)
             if (hasValue(rides_status) && rides_status.length > 0) {
-                const vehicleType = rides_status[0].details?.type ?? null
-                if (vehicleType === "BUS") {
-                    RootNavigation.replace("TicketDetails")
-                } else {
-                    RootNavigation.replace("ConfirmedRide")
-                }
+                RootNavigation.replace("YourJourney")
+                const feedBackScreenDisplayed = rides_status[0].feedBackScreenDisplayed ?? null
+                // if (feedBackScreenDisplayed === false) {
+                //     RootNavigation.replace("RateTrip")
+                // } else {
+                //     RootNavigation.replace("YourJourney")
+                // }
             }
         } catch (error) {
             console.log(error);
@@ -483,10 +485,6 @@ function Dashboard({ navigation }) {
                     // initialCamera={position}
                     initialRegion={region}
                     region={region}>
-                    {/* <Marker
-                        title='Yor are here'
-                        description='This is a description'
-                        coordinate={position} /> */}
                     <>
                         {routeCoordinates.map(marker => (
                             <Marker coordinate={marker}>
@@ -516,7 +514,6 @@ function Dashboard({ navigation }) {
                                         apikey={API.map_key}
                                         mode='DRIVING'
                                         onReady={(result) => {
-                                            console.log(result, 'onReady');
                                             let distance = result?.distance ?? 0
                                             if (distance != 0) {
                                                 radiusToDelta(distance, routeCoordinates[routeCoordinates.length - 1].latitude, routeCoordinates[routeCoordinates.length - 1].longitude)
@@ -564,18 +561,6 @@ function Dashboard({ navigation }) {
                         )
                     }
                 </MapView>
-                {/* <View style={[L.dpA, { top: 5, right: 10 }]}>
-                    <TouchableOpacity
-                        style={[WT(40), HT(40)]}
-                        onPress={() => { onPressZoomIn() }}>
-                        <Icon style={[WT(25), HT(25)]} name="plus" size={20} color={C.green} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[WT(40), HT(40)]}
-                        onPress={() => { onPressZoomOut() }}>
-                        <Icon style={[WT(25), HT(25)]} name="minus" size={20} color={C.red} />
-                    </TouchableOpacity>
-                </View> */}
             </View>
             <View style={[C.bgWhite, L.card, L.dpARL]}>
                 {/* <View style={[L.even, L.jcC, L.aiC, WT('100%')]}> 
@@ -633,6 +618,7 @@ function Dashboard({ navigation }) {
                         </TouchableOpacity>
                     </View>
                 </View>
+                {/* <Button onPress={() => { onProceed() }} style={[WT('90%'), HT(45), L.mT20, hasValue(source_location) && hasValue(destination_location) ? L.opc1 : L.opc4]} label={STR.strings.proceed} /> */}
                 <Button disabled={hasValue(source_location) && hasValue(destination_location) ? false : true} onPress={() => { onProceed() }} style={[WT('90%'), HT(45), L.mT20, hasValue(source_location) && hasValue(destination_location) ? L.opc1 : L.opc4]} label={STR.strings.proceed} />
                 <View style={[HT(15)]} />
             </View>

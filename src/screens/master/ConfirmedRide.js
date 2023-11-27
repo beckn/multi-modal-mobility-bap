@@ -6,13 +6,13 @@ import { Images } from '../../commonStyles/Images'
 import { C, F, HT, L, WT, h, WTD } from '../../commonStyles/style-layout';
 import { Header, TouchableOpacity, TextField, Button, Loader } from '../../components';
 import { useSelector, useDispatch } from 'react-redux'
-import { hasValue } from '../../Utils';
+import { hasValue, isCompletedTrip } from '../../Utils';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { API } from '../../shared/API-end-points';
 import MapViewDirections from 'react-native-maps-directions';
 import RootNavigation from '../../Navigation/RootNavigation';
-import { cancelRide, getRideUpdates, ride_updates_state, current_ride_coordinates_state, current_ride_region_state } from './masterSlice';
+import { cancelRide, getRideUpdates, ride_updates_state, current_ride_coordinates_state, current_ride_region_state, confirmRide, ridesStatus } from './masterSlice';
 import { ride_status_state } from '../user/userSlice';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
@@ -22,13 +22,16 @@ function ConfirmedRide({ navigation, route }) {
     const dispatch = useDispatch()
     const responseDataMaster = useSelector(state => state.master)
     const responseDataUser = useSelector(state => state.user)
+    const itemData = route.params?.itemData ?? null;
+    const completed_trips = responseDataUser?.completed_trips ?? []
     const confirm_ride = responseDataMaster?.confirm_ride ?? null
+    const rides_status = responseDataMaster?.rides_status ?? null
     const agent = confirm_ride?.fulfillment?.agent ?? {}
     const vehicle_detail = confirm_ride?.fulfillment?.vehicle ?? {}
     const authorization = confirm_ride?.fulfillment?.start?.authorization ?? {}
-    const ride_updates = responseDataMaster?.ride_updates ?? null
+    const ride_updates = responseDataMaster?.ride_updates?.descriptor ?? null
     const ride_status = responseDataUser?.ride_status ?? null
-    console.log(confirm_ride, 'confirm_ride');
+    const status_code = responseDataMaster?.ride_updates?.descriptor?.code ?? null
     var mapRef = useRef(null);
     var markerRef = useRef(null);
     const [modalCancel, set_modalCancel] = useState(false);
@@ -60,46 +63,110 @@ function ConfirmedRide({ navigation, route }) {
         longitudeDelta: API.LONGITUDE_DELTA,
     });
     const [subTitle, setSubTitle] = useState("");
+    const [rideDetails, setRideDetails] = useState({});
+
     useFocusEffect(
         React.useCallback(() => {
-            let interval = setInterval(() => {
-                fetchRideStatus()
-            }, 13000);
-
-            const code = ride_updates?.code ?? ""
-            if (code === "RIDE_COMPLETED") {
-                clearInterval(interval)
-            }
-            setDestinationCoordinates()
-            return () => { clearInterval(interval) };
+            dispatch(ridesStatus({}))
+            fetchRideStatus()
+            return () => { };
         }, []),
     );
+
+    // useFocusEffect(
+    //     React.useCallback(() => {
+    //         let interval = setInterval(() => {
+    //             fetchRideStatus()
+    //         }, 13000);
+
+    //         const code = ride_updates?.code ?? ""
+    //         if (code === "RIDE_COMPLETED") {
+    //             clearInterval(interval)
+    //         }
+    //         setDestinationCoordinates()
+    //         return () => { clearInterval(interval) };
+    //     }, []),
+    // );
+
+    useFocusEffect(
+        React.useCallback(() => {
+            if (hasValue(completed_trips) && completed_trips.length > 0) {
+                for (let index = 0; index < completed_trips.length; index++) {
+                    const element = completed_trips[index];
+                    if (element.status != "SELECTED" && element.type === "AUTO") {
+                        if (element.type === "AUTO") {
+                            setRideDetails(element)
+                            break;
+                        }
+                    }
+                }
+            }
+            return () => { };
+        }, [completed_trips]),
+    );
+
     console.log(ride_updates?.code ?? "", 'ride_updates code');
-    // RIDE_ASSIGNED  RIDE_STARTED  RIDE_IN_PROGRESS  RIDE_COMPLETED
+    // RIDE_ASSIGNED  RIDE_STARTED  RIDE_IN_PROGRESS  RIDE_COMPLETED 
+
+    // console.log(rides_status, 'rides_status');
+    // console.log(rideDetails, 'rideDetails');
     function fetchRideStatus() {
         try {
-            dispatch(getRideUpdates({
-                "routeId": confirm_ride?.routeId ?? "",
-                "order_id": confirm_ride?.order_id ?? ""
-            }))
+            if (hasValue(rides_status)) {
+                if (hasValue(rides_status) && Array.isArray(rides_status) && rides_status.length > 0) {
+                    let payloads = {}
+                    for (let index = 0; index < rides_status[0].details.length; index++) {
+                        const element = rides_status[0].details[index];
+                        if (element.status != "SELECTED" && element.type === "AUTO") {
+                            payloads = element
+                            break;
+                        }
+                    }
+                    dispatch(getRideUpdates({
+                        "routeId": rides_status[0].routeId,
+                        "order_id": payloads?.order_id ?? ""
+                    }))
+                }
+            }
+            // else {
+            //     dispatch(getRideUpdates({
+            //         "routeId": itemData?.routeId ?? "",
+            //         "order_id": itemData?.order_id ?? ""
+            //     }))
+            // }
         } catch (error) {
             console.log(error);
         }
     }
     useEffect(() => {
         try {
-            const code = ride_updates?.code ?? ""
+            const code = ride_updates?.code ?? null
             dispatch(ride_status_state({ ride_status: hasValue(code) ? code : "RIDE_ASSIGNED" }))
             if (code === "RIDE_COMPLETED") {
-                RootNavigation.navigate("RideCompleted")
-                dispatch(ride_updates_state({}))
+                // RootNavigation.navigate("RideCompleted", { itemData: itemData })
                 dispatch(ride_status_state({ ride_status: "RIDE_COMPLETED" }))
+                // dispatch(getRideUpdates({ "cancel": "CANCELED" })) 
             }
+            // if (code === "RIDE_IN_PROGRESS") {
+            //     onBookRide()
+            // }
             setLabels()
         } catch (error) {
             console.log(error);
         }
     }, [ride_updates]);
+
+    function onBookRide() {
+        try {
+            console.log(isCompletedTrip(), 'isCompletedTrip()');
+            if (isCompletedTrip()) {
+                console.log('autoBook');
+                dispatch(confirmRide({ data: "", autoBook: "autoBook" }))
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
     function setLabels() {
         try {
@@ -188,7 +255,6 @@ function ConfirmedRide({ navigation, route }) {
                     longitude: source_lng ?? API.LONGITUDE,
                 })
                 Geolocation.watchPosition(async (pos) => {
-                    console.log(pos, 'pos');
                     const crd = pos.coords;
                     const location_data = {
                         latitude: crd.latitude,
@@ -275,7 +341,7 @@ function ConfirmedRide({ navigation, route }) {
     function onCancel() {
         try {
             set_modalCancel(false);
-            dispatch(cancelRide(confirm_ride))
+            dispatch(cancelRide(rideDetails))
         } catch (error) {
             console.log(error);
         }
@@ -294,8 +360,7 @@ function ConfirmedRide({ navigation, route }) {
             console.log(error);
         }
     };
-    console.log(routeCoordinates, 'routeCoordinates');
-    // RIDE_IN_PROGRESS
+
     function openMap() {
         try {
             const url = Platform.select({
@@ -307,19 +372,48 @@ function ConfirmedRide({ navigation, route }) {
             console.log(error);
         }
     }
+    function journeyLabel() {
+        try {
+            let label = "Auto is on the way"
+            const code = ride_updates?.code ?? ""
+            if (code === "RIDE_IN_PROGRESS") {
+                label = "Trip Started"
+            } else if (code === "RIDE_COMPLETED") {
+                label = "Trip Completed"
+            }
+            return label
+        } catch (error) {
+            return "Auto is on the way"
+        }
+    }
+    function isCancelAble() {
+        try {
+            let status = false
+            if (status_code === "RIDE_ASSIGNED") {
+                status = true
+            } else if (status_code === "RIDE_CONFIRMED") {
+                status = true
+            }
+            return status
+        } catch (error) {
+            console.log(error);
+            return false
+        }
+    }
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
-            <Header navigation={navigation} hardwareBack={'YourJourney'} left_press={'YourJourney'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={headerLabel} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} />
-            {/* <Header navigation={navigation} hardwareBack={'cancel_trip'} left_press={'cancel_trip'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={headerLabel} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} /> */}
-            {/* {responseDataMaster.isLoading && <Loader isLoading={responseDataMaster.isLoading} />} */}
+            <Header navigation={navigation} hardwareBack={'YourJourney'} left_press={'YourJourney'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={ride_updates?.name ?? STR.strings.ride_is_confirmed} ic_right={Images.call} ic_right_style={[WT(25), HT(25)]} ic_right_press={"call"} />
+            {responseDataMaster.isLoadingCancel && <Loader isLoading={responseDataMaster.isLoadingCancel} />}
             <ScrollView>
                 <View style={[WT('100%'), L.pH10, L.even, L.aiC, L.jcSB, L.mT10]}>
                     <View style={[L.jcC, L.aiC, L.even]}>
                         <Image style={[HT(35), WT(35)]} source={Images.auto_black} />
                         <View style={[WT(8)]} />
                         <View style={[]}>
-                            <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{subTitle}</Text>
-                            {/* <Text style={[C.lColor, F.ffM, F.fsOne2]}>Arriving in 7 minutes</Text> */}
+                            {/* <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{rideDetails?.fulfillment?.state?.descriptor?.name ?? "Auto is on the way"}</Text> */}
+                            <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{journeyLabel()}</Text>
+                            {/* <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{subTitle}</Text> */}
+                            {/* <Text style={[C.lColor, F.ffM, F.fsOne2]}>NA</Text> */}
                         </View>
                     </View>
                     {ride_status === "RIDE_IN_PROGRESS" &&
@@ -372,7 +466,6 @@ function ConfirmedRide({ navigation, route }) {
                                 resetOnChange={false}
                                 precision={'high'}
                                 onReady={(text) => {
-                                    console.log(text, 'onReady');
                                     let distance = text?.distance ?? 0
                                     if (distance != 0) {
                                         radiusToDelta(distance, routeCoordinates[routeCoordinates.length - 1].latitude, routeCoordinates[routeCoordinates.length - 1].longitude)
@@ -386,13 +479,13 @@ function ConfirmedRide({ navigation, route }) {
                     <View style={[L.jcC, L.aiC, L.even]}>
                         <Image style={[HT(30), WT(30), L.bR30]} source={Images.avatar} />
                         <View style={[WT(7)]} />
-                        <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{agent?.name ?? ""}</Text>
+                        <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{rideDetails?.fulfillment?.agent?.name ?? ""}</Text>
                     </View>
                     {!hasValue(hideCode) ?
                         (<View style={[L.jcC, L.aiC, L.even, HT(50)]}>
                             <Text style={[C.lColor, F.ffM, F.fsOne4]}>OTP</Text>
                             <View style={[WT(5)]} />
-                            <Text style={[C.fcBlack, F.ffB, F.fsOne7]}>{authorization?.token ?? ""}</Text>
+                            <Text style={[C.fcBlack, F.ffB, F.fsOne7]}>{rideDetails?.fulfillment?.start?.authorization?.token ?? ""}</Text>
                         </View>) :
                         (<View style={[L.jcC, L.aiC, L.even, HT(50)]}>
                             {/* <Text style={[C.fcBlack, F.ffB, F.fsOne7]}>{hideCode}</Text> */}
@@ -400,10 +493,10 @@ function ConfirmedRide({ navigation, route }) {
                     }
                 </View>
                 <TouchableOpacity style={[WT('100%'), L.pH10, L.even, L.aiC, L.jcSB]}
-                    onPress={() => { onCall(agent?.phone ?? "") }}>
+                    onPress={() => { onCall(rideDetails?.fulfillment?.agent?.phone ?? "") }}>
                     <View style={[]}>
-                        <Text style={[C.fcBlack, F.ffB, F.fsOne8]}>{vehicle_detail?.registration ?? ""}</Text>
-                        <Text style={[C.lColor, F.ffM, F.fsOne3]}>{vehicle_detail?.category ?? ""}</Text>
+                        <Text style={[C.fcBlack, F.ffB, F.fsOne8]}>{rideDetails?.fulfillment?.vehicle?.registration ?? ""}</Text>
+                        <Text style={[C.lColor, F.ffM, F.fsOne3]}>{rideDetails?.fulfillment?.vehicle?.category ?? ""}</Text>
                     </View>
                     <View style={[L.jcC, L.aiC, L.even, HT(50)]}>
                         <Image style={[HT(30), WT(30), L.bR30]} source={Images.ic_call} />
@@ -411,7 +504,7 @@ function ConfirmedRide({ navigation, route }) {
                 </TouchableOpacity>
                 <View style={[HT(100)]} />
             </ScrollView>
-            <View style={[C.bgTrans, L.pH10, L.dpARL]}>
+            {isCancelAble() && <View style={[C.bgTrans, L.pH10, L.dpARL]}>
                 {/* <View style={[L.asR, L.mB10]}>
                     <Text style={[C.fcBlack, F.ffM, F.fsOne4]}>Distance:- {distance} km</Text>
                 </View> */}
@@ -421,7 +514,7 @@ function ConfirmedRide({ navigation, route }) {
                     <Text style={[C.fcBlack, F.ffB, F.fsOne5, L.taC]}>{STR.strings.cancel_ride}</Text>
                 </TouchableOpacity>
                 <View style={[HT(15)]} />
-            </View>
+            </View>}
             <Modal
                 transparent={true}
                 supportedOrientations={['portrait', 'landscape']}

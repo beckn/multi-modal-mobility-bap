@@ -8,8 +8,6 @@ import { Header, Loader, TouchableOpacity } from '../../components';
 import { useSelector, useDispatch } from 'react-redux'
 import { dateTime, hasValue, toFixed } from '../../Utils';
 import { getHistory, searchRoutes } from '../master/masterSlice';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import moment from 'moment';
 STR = require('../../languages/strings');
 
 function MyJourney({ navigation, route }) {
@@ -81,14 +79,12 @@ function MyJourney({ navigation, route }) {
     }
     function setRoutes(item) {
         try {
-            console.log(item, 'item');
             let select_route = []
             if (item.type === "MULTI") {
-                select_route = item?.details ?? []
+                select_route = item?.routes ?? []
             } else {
                 select_route = [item]
             }
-            console.log(select_route, 'select_route');
             if (Array.isArray(select_route) && select_route.length > 0) {
                 let tmpArray = []
                 select_route.forEach((element, i) => {
@@ -136,7 +132,7 @@ function MyJourney({ navigation, route }) {
                         walk_eta3 = moment().add(tmpTime_durationFromStartPoint, 'minutes').format('hh:mm A')
                     }
                     let tmpJasonStart = {
-                        address: element?.start?.address?.ward ?? element?.start?.descriptor?.name ?? "",
+                        address: element?.start?.address?.ward ?? element?.start?.name ?? "",
                         vehicle: {
                             type: element?.type ?? "",
                             number: ""
@@ -144,7 +140,7 @@ function MyJourney({ navigation, route }) {
                         price: hasValue(element?.price?.value ?? "") ? toFixed(element?.price?.value ?? "") != 0 ? "Price " + toFixed(element?.price?.value ?? "") : "Price " + element?.price?.value ?? "" : "",
                         distance: element?.distance ?? "",
                         duration: element?.busTravelTime ?? element?.duration ?? "",
-                        status: element?.status ?? "",
+                        status: "",
                         etd: etd,
                         eta: i != 0 ? eta2 : walk_eta3,
                         walkingDistanceFromStartPoint: hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 ? element.distanceFromStartPoint : "",
@@ -157,7 +153,7 @@ function MyJourney({ navigation, route }) {
                         const tmpTime_durationToEndPoint = hasValue(element.durationToEndPoint) ? parseInt(element.durationToEndPoint) : 0
                         let walk_eta = moment().add(tmpTime_durationToEndPoint, 'minutes').format('hh:mm A')
                         tmpJasonWalkEnd = {
-                            address: element?.end?.address?.ward ?? element?.end?.descriptor?.name ?? "",
+                            address: element?.end?.address?.ward ?? element?.end?.name ?? "",
                             vehicle: {
                                 type: "Walk",
                                 number: ""
@@ -186,7 +182,7 @@ function MyJourney({ navigation, route }) {
                             price: hasValue(element?.price?.value ?? "") ? toFixed(element?.price?.value ?? "") != 0 ? "Price " + toFixed(element?.price?.value ?? "") : "Price " + element?.price?.value ?? "" : "",
                             distance: element?.distance ?? "",
                             duration: element?.duration ?? "",
-                            status: element?.status ?? "",
+                            status: "",
                             eta: end_eta,
                             walkingDistanceFromEndPoint: element?.distanceToEndPoint ?? "",
                             walkingDurationFromEndPoint: element?.durationToEndPoint ?? "",
@@ -196,6 +192,7 @@ function MyJourney({ navigation, route }) {
                     }
                 });
                 setTracking(tmpArray)
+                return tmpArray
             }
         } catch (error) {
             console.log(error);
@@ -230,27 +227,6 @@ function MyJourney({ navigation, route }) {
         if (hasValue(tmp_track) && tmp_track.length > 0) {
             rideTo = tmp_track[tmp_track.length - 1].end?.address?.ward ?? ""
         }
-
-        let select_route = {}
-        if (item.type === "MULTI") {
-            select_route = item?.details ?? []
-        } else {
-            select_route = [item]
-        }
-        let vehicleData = []
-        if (Array.isArray(select_route) && select_route.length > 0) {
-            select_route.forEach((element, i) => {
-                let tmpJasonStart = {
-                    icon: element?.type === "AUTO" ? Images.auto : Images.bus_full,
-                }
-                vehicleData.push(tmpJasonStart)
-            });
-        } else {
-            let tmpJasonStart = {
-                icon: select_route?.type === "AUTO" ? Images.auto : Images.bus_full,
-            }
-            vehicleData.push(tmpJasonStart)
-        }
         return (
             <View style={[WT('95%'), L.asC, L.jcC, C.bgWhite, L.card, L.mB8, L.bR10]}>
                 <View style={[HT(3)]} />
@@ -260,35 +236,7 @@ function MyJourney({ navigation, route }) {
                         <Text style={[C.lColor, F.ffM, F.fsOne4, L.f1]}>{dateTime(item.createdAt, "", "ddd, DD MMM, HH:mm a")}</Text>
                         <Text style={[C.lColor, F.ffM, F.fsOne4, L.f1]}>Your ride to <Text style={[C.lColor, F.ffB, F.fsOne4, L.f1]}>{item.endLocation}</Text></Text>
                     </View>
-
-                    {hasValue(vehicleData) && vehicleData.length > 0 &&
-                        <View style={[WT('20%'), L.asC, L.aiR]}>
-                            <FlatList
-                                style={[L.mT15]}
-                                horizontal={true}
-                                showsHorizontalScrollIndicator={false}
-                                keyboardShouldPersistTaps='always'
-                                keyExtractor={(item, index) => String(index)}
-                                data={vehicleData}
-                                contentContainerStyle={[{ paddingBottom: h(0) }]}
-                                renderItem={({ item, index }) => {
-                                    const element = item
-                                    const element_index = index
-                                    return (
-                                        <View key={index} style={[L.aiC, L.even]}>
-                                            {vehicleData.length > 1 && element_index != 0 &&
-                                                <Text style={[F.fsOne4, F.ffB, C.fcBlack, L.taC]}>{"  + "}</Text>
-                                            }
-                                            <View style={[{ marginLeft: element?.distance ?? 0 }, HT(23), WT(23), C.bgWhite, L.card, C.brLight, L.br05, L.bR4, L.jcC, L.aiC]}>
-                                                <Image style={[HT(16), WT(16)]} source={element?.icon ?? ""} />
-                                            </View>
-                                        </View>
-                                    )
-                                }}
-                            />
-                        </View>
-                    }
-                    {/* {item.type === "MULTI" &&
+                    {item.type === "MULTI" &&
                         <View style={[L.aiC]}>
                             <View style={[L.even, L.aiC]}>
                                 <Image style={[HT(18), WT(18)]} source={Images.auto} />
@@ -313,7 +261,7 @@ function MyJourney({ navigation, route }) {
                             </View>
                             <Text style={[C.lColor, F.ffM, F.fsOne2]}>{item.totalDistance}</Text>
                         </View>
-                    } */}
+                    }
                 </TouchableOpacity>
                 {isVisible == item && <View>
                     <View style={[HT(3), WT("100%"), C.bgLGray]} />
@@ -329,10 +277,10 @@ function MyJourney({ navigation, route }) {
                             <Text style={[C.fcBlack, F.ffM, F.fsOne5]}>{item.totalCost}</Text>
                         </View>
                     </View>
-                    {hasValue(trackingData) && trackingData.length > 0 &&
+                    {hasValue(tmp_track) && tmp_track.length > 0 &&
                         <View style={[WT('100%'), L.asC, L.jcC, L.pH15]}>
                             <View style={[HT(15)]} />
-                            {trackingData.map(function (element, index) {
+                            {tmp_track.map(function (element, index) {
                                 return (
                                     <View key={index} style={[L.pH8]}>
                                         <View style={[L.even, L.aiC, { marginTop: -11 }]}>
@@ -340,26 +288,66 @@ function MyJourney({ navigation, route }) {
                                             <View style={[WT(10)]} />
                                             <View style={[]}>
                                                 <View style={[L.even, L.aiC]}>
-                                                    <Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.address ?? ""}</Text>
+                                                    {element.type === "AUTO" ?
+                                                        (<Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.start?.address?.ward ?? ""}</Text>) :
+                                                        (<Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.start?.descriptor?.name ?? ""}</Text>)
+                                                    }
                                                 </View>
                                                 <Text style={[C.fcBlack, F.ffM, F.fsOne2]}>
-                                                    {hasValue(element?.eta ?? "") ? `ETA ${element?.eta}` : ""}
-                                                    {hasValue(element?.eta ?? "") && hasValue(element?.etd ?? "") && " | "}
-                                                    {hasValue(element?.etd ?? "") ? `ETD ${element?.etd}` : ""}
+                                                    {hasValue(element?.type ?? "") ? "" + element?.type : ""}
+                                                    {hasValue(element?.endTime ?? "") ? " | " + element?.endTime : ""}
+                                                    {hasValue(element?.startTime ?? "") ? " | " + element?.startTime : ""}
                                                 </Text>
                                             </View>
                                         </View>
-                                        {trackingData.length != index + 1 &&
+                                        {tmp_track.length == index + 1 && <>
                                             <View style={[HT(100), WT(2), C.bgBlack, L.jcC, { marginTop: -11 }]}>
                                                 <View style={[HT(25), WTD(80), L.even, L.aiC, { marginLeft: -10 }]}>
                                                     <View style={[WT(10)]} />
                                                     <View style={[HT(25), WT(25), C.bgWhite, L.card, C.brLight, L.br05, L.bR4, L.jcC, L.aiC, { marginLeft: -10 }]}>
-                                                        <Image style={[HT(18), WT(18)]} source={element?.icon ?? ""} />
+                                                        <Image style={[HT(18), WT(18)]} source={element.type === "AUTO" ? Images.auto : Images.bus_full} />
                                                     </View>
                                                     <View style={[WT(10)]} />
                                                     <Text style={[C.fcBlack, F.ffM, F.fsOne2, C.fcBlue]}>
-                                                        {element?.vehicle?.type ?? ""}
-                                                        {hasValue(element?.price ?? "") ? " | " + element?.price : ""}
+                                                        {hasValue(element?.price ?? "") ? "Price " + element?.price : ""}
+                                                        {hasValue(element?.distance ?? "") ? " | " + element?.distance : ""}
+                                                        {hasValue(element?.duration ?? "") ? " | Duration " + element?.duration : ""}
+                                                        {hasValue(element?.status ?? "") &&
+                                                            <Text style={[C.lColor]}>
+                                                                {hasValue(element?.status ?? "") ? " | " + element?.status : ""}
+                                                            </Text>
+                                                        }
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <View style={[L.even, L.aiC, { marginTop: -11 }]}>
+                                                <View style={[HT(8), WT(8), L.bR8, C.bgLightGray, { marginLeft: -3 }]} />
+                                                <View style={[WT(10)]} />
+                                                <View style={[]}>
+                                                    <View style={[L.even, L.aiC]}>
+                                                        {element.type === "AUTO" ?
+                                                            (<Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.end?.address?.ward ?? ""}</Text>) :
+                                                            (<Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.end?.descriptor?.name ?? ""}</Text>)
+                                                        }
+                                                    </View>
+                                                    <Text style={[C.fcBlack, F.ffM, F.fsOne2]}>
+                                                        {hasValue(element?.type ?? "") ? "" + element?.type : ""}
+                                                        {hasValue(element?.endTime ?? "") ? " | " + element?.endTime : ""}
+                                                        {hasValue(element?.startTime ?? "") ? " | " + element?.startTime : ""}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </>}
+                                        {tmp_track.length != index + 1 &&
+                                            <View style={[HT(100), WT(2), C.bgBlack, L.jcC, { marginTop: -11 }]}>
+                                                <View style={[HT(25), WTD(80), L.even, L.aiC, { marginLeft: -10 }]}>
+                                                    <View style={[WT(10)]} />
+                                                    <View style={[HT(25), WT(25), C.bgWhite, L.card, C.brLight, L.br05, L.bR4, L.jcC, L.aiC, { marginLeft: -10 }]}>
+                                                        <Image style={[HT(18), WT(18)]} source={element.type === "AUTO" ? Images.auto : Images.bus_full} />
+                                                    </View>
+                                                    <View style={[WT(10)]} />
+                                                    <Text style={[C.fcBlack, F.ffM, F.fsOne2, C.fcBlue]}>
+                                                        {hasValue(element?.price ?? "") ? "Price " + element?.price : ""}
                                                         {hasValue(element?.distance ?? "") ? " | " + element?.distance : ""}
                                                         {hasValue(element?.duration ?? "") ? " | Duration " + element?.duration : ""}
                                                         {hasValue(element?.status ?? "") &&
@@ -385,7 +373,6 @@ function MyJourney({ navigation, route }) {
             </View>
         )
     }
-    console.log(trackingData, 'trackingData  ');
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
             <Header navigation={navigation} hardwareBack={'Dashboard'} left_press={'Dashboard'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={STR.strings.my_journeys} />

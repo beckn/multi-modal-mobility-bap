@@ -191,7 +191,15 @@ export const userSlice = createSlice({
             if (hasValue(action.payload) && Array.isArray(action.payload) && action.payload.length > 0) {
                 let tmp_trip = []
                 action.payload.forEach(element => {
-                    tmp_trip.push({ ...element, isBooked: 0 })
+                    if (hasValue(element?.status ?? "")) {
+                        if (element.status === "SELECTED") {
+                            tmp_trip.push({ ...element, isBooked: 0 })
+                        } else {
+                            tmp_trip.push({ ...element, isBooked: 1 })
+                        }
+                    } else {
+                        tmp_trip.push({ ...element, isBooked: 0 })
+                    }
                 });
                 state.completed_trips = tmp_trip
             } else if (hasValue(action.payload)) {

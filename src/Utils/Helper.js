@@ -180,17 +180,32 @@ export const multipleMassage = (data) => {
   }
 }
 
-export const isCompletedTrip = (data) => {
+export const isCompletedTrip = (flag) => {
   try {
-    const id = data?.id ?? null
     let status = false
     const items = store?.getState()?.user?.completed_trips ?? []
     if (hasValue(items) && items.length > 0) {
-      const is_find = items.find((element) => element.isBooked === data);
+      let is_find = null
+      for (let index = 0; index < items.length; index++) {
+        const element = items[index];
+        if (hasValue(flag) && flag === "isMulti") {
+          if (element.status === "SELECTED" || element.status === "CONFIRMED" || element.status === "IN_PROGRESS") {
+            is_find = element
+            break;
+          }
+        } else {
+          if (element.status === "SELECTED") {
+            is_find = element
+            break;
+          }
+        }
+      }
+      console.log(is_find, 'is_find isCompletedTrip');
       if (hasValue(is_find)) {
         status = true
       }
     }
+    console.log(status, 'status isCompletedTrip');
     return status;
   } catch (error) {
     console.log(error);

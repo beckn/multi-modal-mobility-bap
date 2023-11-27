@@ -69,15 +69,15 @@ function BusJourney({ navigation, route }) {
         if (item.type === "AUTO") {
             image = Images.auto
             title = "Auto details"
-            sub_title = item.isBooked === 1 ? "Ride Completed" : STR.strings.ride_not_started_yet
+            sub_title = item.status != "SELECTED" ? "Ride Completed" : STR.strings.ride_not_started_yet
         } else if (item.type === "BUS") {
             image = Images.bus_full
             title = "Bus details"
-            sub_title = item.isBooked === 1 ? "Ride Completed" : "Ticket Confirmed"
+            sub_title = item.status != "SELECTED" ? "Ride Completed" : "Ticket Confirmed"
         } else {
             image = Images.bus_full
             title = "Bus details"
-            sub_title = item.isBooked === 1 ? "Ride Completed" : "Ticket Confirmed"
+            sub_title = item.status != "SELECTED" ? "Ride Completed" : "Ticket Confirmed"
         }
         return (<>
             <View style={[WT('100%'), L.pV10, L.jcC, L.mB3, { borderTopWidth: 3, borderTopColor: C.gray200, borderBottomWidth: 3, borderBottomColor: C.gray200 }]}>

@@ -99,7 +99,7 @@ function SelectedJourneyDetails({ navigation, route }) {
                 let item = null
                 for (let index = 0; index < completed_trips.length; index++) {
                     const element = completed_trips[index];
-                    if (element.isBooked === 0) {
+                    if (item.status === "SELECTED") {
                         item = element
                         break;
                     }
