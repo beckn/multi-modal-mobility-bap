@@ -1,0 +1,28 @@
+import { BASE_URL } from "./app-setting";
+
+export const API = {
+     BASE_URL: BASE_URL,
+     TIMEOUT: 3000,
+     map_key: "AIzaSyB6XW-WRFTFqOx05Xwi2Ek5ygSGnbyLVsQ",
+     LATITUDE: 20.5937,
+     LONGITUDE: 78.9629,
+     LATITUDE_DELTA: 0.0043,
+     LONGITUDE_DELTA: 0.0034,
+     send_otp: `${BASE_URL}/v1/auth/otp/send`,
+     verify_otp: `${BASE_URL}/v1/auth/otp/verify`,
+     user_details: `${BASE_URL}/v1/user`,
+     update_user_details: `${BASE_URL}/v1/user`,
+     logout: `${BASE_URL}/api/sf/v2/me/logout`,
+     search: `${BASE_URL}/v1/modal/search`,
+     get_job_details: `${BASE_URL}/v1/job`,
+     select_route: `${BASE_URL}/v1/modal/select`,
+     confirm_ride: `${BASE_URL}/v1/modal/confirm`,
+     cancel_ride: `${BASE_URL}/v1/modal/cancel`,
+     history: `${BASE_URL}/v1/modal/history`,
+     verify_mobile_number: `${BASE_URL}/v1/user/verify/mobile-number`,
+     user_send_otp: `${BASE_URL}/v1/user/send-otp`,
+     geocode: "https://maps.googleapis.com/maps/api/geocode/json?address=",
+     rating: `${BASE_URL}/v1/modal/rating`,
+     get_ride_updates: `${BASE_URL}/v1/modal/update`,
+     rides_status: `${BASE_URL}/v1/modal/rides/status`,
+}
