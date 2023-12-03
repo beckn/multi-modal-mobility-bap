@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-    View, Text, FlatList, Image, Modal, Dimensions
+    View, Text, FlatList, Image, Modal, Dimensions, Platform
 } from 'react-native';
 import { Images } from '../../commonStyles/Images'
 import { C, F, HT, L, WT, h } from '../../commonStyles/style-layout';
@@ -95,23 +95,34 @@ function Dashboard({ navigation }) {
             if (hasValue(rides_status) && rides_status.length > 0) {
                 const status = rides_status[0].status ?? null
                 const feedBackScreenDisplayed = rides_status[0].feedBackScreenDisplayed ?? null
-                if (status != "CANCELLED") {
-                    if (status === "IN_PROGRESS" || status === "CONFIRMED" || feedBackScreenDisplayed === false) {
-                        rides_status[0].details.forEach(element => {
-                            if (element.status != "SELECTED") {
-                                if (element.type === "BUS") {
-                                    setStartLocation(element?.fulfillment?.start?.location?.descriptor?.name ?? "")
-                                    setEndLocation(element?.fulfillment?.end?.location?.descriptor?.name ?? "")
-                                } else {
-                                    setStartLocation(element?.fulfillment?.start?.location?.address?.ward ?? "")
-                                    setEndLocation(element?.fulfillment?.end?.location?.address?.ward ?? "")
-                                }
-                            }
-                        });
-                        setModalRide(true)
+                if (status === "IN_PROGRESS") {
+                    setModalAddress()
+                } else if (status === "CONFIRMED") {
+                    setModalAddress()
+                } else if (status === "COMPLETED") {
+                    if (feedBackScreenDisplayed === false) {
+                        setModalAddress()
                     }
                 }
             }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    function setModalAddress() {
+        try {
+            rides_status[0].details.forEach(element => {
+                if (element.status != "SELECTED") {
+                    if (element.type === "BUS") {
+                        setStartLocation(element?.fulfillment?.start?.location?.descriptor?.name ?? "")
+                        setEndLocation(element?.fulfillment?.end?.location?.descriptor?.name ?? "")
+                    } else {
+                        setStartLocation(element?.fulfillment?.start?.location?.address?.ward ?? "")
+                        setEndLocation(element?.fulfillment?.end?.location?.address?.ward ?? "")
+                    }
+                }
+            });
+            setModalRide(true)
         } catch (error) {
             console.log(error);
         }
@@ -339,26 +350,6 @@ function Dashboard({ navigation }) {
             }
             setRegion(routeCoordinates_obj)
             dispatch(region_state({ region_data: routeCoordinates_obj }))
-            // mapRef.current.fitToCoordinates(routeCoordinates, {
-            //     edgePadding: {
-            //         top: 20,
-            //         right: 20,
-            //         bottom: 20,
-            //         left: 20,
-            //     },
-            // });
-            // var i = setInterval(() => {
-            //     mapRef?.current?.fitToCoordinates(["origin", "destination"], {
-            //         edgePadding: {
-            //             top: 100,
-            //             right: 100,
-            //             left: 100,
-            //             bottom: 100,
-            //             aimated: true,
-            //         },
-            //     });
-            //     clearInterval(i);
-            // }, 50); 
         } catch (error) {
             console.log(error);
         }
@@ -563,35 +554,18 @@ function Dashboard({ navigation }) {
                 </MapView>
             </View>
             <View style={[C.bgWhite, L.card, L.dpARL]}>
-                {/* <View style={[L.even, L.jcC, L.aiC, WT('100%')]}> 
-                        <View style={[WT('70%'), L.jcC, L.aiC, HT(28)]}>
-                        <FlatList
-                            showsHorizontalScrollIndicator={false}
-                            keyboardShouldPersistTaps='always'
-                            horizontal={true}
-                            keyExtractor={(item, index) => String(index)}
-                            data={menu_data3}
-                            renderItem={({ item, index }) => renderItem3(item, index)}
-                        />
-                    </View>
-                    <View style={[WT('30%'), HT(40), L.jcC, L.even, L.aiC, L.jcB, { borderTopWidth: 2, borderBottomWidth: 2, borderTopColor: C.gray100, borderBottomColor: C.gray100 }]}>
-                        <Image style={[WT(20), HT(20)]} source={Images.filter} />
-                        <View style={[WT(5)]} />
-                        <Text style={[F.fsOne5, F.ffB, C.lColor]} numberOfLines={1}>{STR.strings.more_filters}</Text>
-                        <View style={[WT(5)]} />
-                    </View> 
-                </View> */}
+
                 <View style={[WT('95%'), L.asC, L.even, L.aiC, L.pH10, L.jcSB, L.mT15]}>
                     <View style={[WT('10%'), L.jc]}>
                         <View style={[WT(7), HT(7), L.bR20, hasValue(source_location) ? C.bgBlack : C.bgLightGray]} />
                         <View style={[HT(60), WT(1), L.bR20, C.bgVLGray, L.mT1, L.mL3]} />
                         <View style={[WT(7), HT(7), L.bR20, hasValue(destination_location) ? C.bgBlack : C.bgLightGray, L.mT1]} />
                     </View>
-                    <View style={[WT('90%')]}>
+                    <View style={[WT('90%', HT(50),)]}>
                         <TouchableOpacity style={[HT(50), WT('100%'), C.bgWhite, L.asC, L.aiC, L.br05, C.brLight, L.bR10, L.pH10]}
                             onPress={() => { set_modalSearch(true); set_location_type(1); set_search_value(source_location) }}>
                             <TextField
-                                style={[HT(50), WT('100%'), C.lColor, F.ffM]}
+                                style={[WT('100%'), C.lColor, F.ffB, { top: Platform.OS === 'ios' ? 15 : 0 }]}
                                 placeholder={STR.strings.your_location}
                                 value={source_location}
                                 returnKeyType='done'
@@ -601,9 +575,10 @@ function Dashboard({ navigation }) {
                         </TouchableOpacity>
                         <TouchableOpacity style={[HT(50), WT('100%'), L.even, C.bgWhite, L.asC, L.aiC, L.br05, C.brLight, L.bR10, L.pH10, L.mT15]}
                             onPress={() => { onDestinationInput(); set_search_value(destination_location) }}>
-                            <View style={[WT('90%')]}>
+                            <View style={[WT('90%'),]}>
                                 <TextField
-                                    style={[HT(50), WT('100%'), C.lColor, F.ffB]}
+                                    style={[WT('100%'), C.lColor, F.ffB, { top: Platform.OS === 'ios' ? 15 : 0 }]}
+                                    // style={[HT(50), WT('100%'), C.lColor, F.ffB]}
                                     placeholder={STR.strings.where_do_you_want_to_go}
                                     value={destination_location}
                                     returnKeyType='done'
@@ -628,36 +603,38 @@ function Dashboard({ navigation }) {
                 visible={modalSearch}
                 animationType='fade'
                 onRequestClose={() => set_modalSearch(false)}>
-                <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
-                    <View style={[WT('100%'), HT('100%'), L.asC, L.pH20, C.bgWhite, L.pH10]}>
-                        <View style={[L.even]}>
-                            <View style={[WT('12%'), L.mT5]}>
-                                <TouchableOpacity style={([WT(33), HT(40), L.jcC, L.aiC, L.bR20])} onPress={() => { set_modalSearch(false) }}>
-                                    <Image style={[WT(80), HT(80)]} source={Images.back} />
-                                </TouchableOpacity>
+                <View style={{ marginTop: Platform.OS == 'ios' ? 60 : 0 }}>
+                    <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
+                        <View style={[WT('100%'), HT('100%'), L.asC, L.pH20, C.bgWhite, L.pH10]}>
+                            <View style={[L.even]}>
+                                <View style={[WT('12%'), L.mT5]}>
+                                    <TouchableOpacity style={([WT(33), HT(40), L.jcC, L.aiC, L.bR20])} onPress={() => { set_modalSearch(false) }}>
+                                        <Image style={[WT(80), HT(80)]} source={Images.back} />
+                                    </TouchableOpacity>
+                                </View>
+                                <GooglePlacesAutocomplete
+                                    styles={{
+                                        textInput: [WT('88%'), C.bgWhite, L.card, L.asC, L.aiC, L.br05, C.brLight, L.bR10, L.pH10],
+                                    }}
+                                    query={{
+                                        key: API.map_key,
+                                        language: 'en',
+                                    }}
+                                    placeholder='Search Location'
+                                    fetchDetails={true}
+                                    // ref={ref => {
+                                    //     ref?.setAddressText(search_value)
+                                    // }}
+                                    textInputProps={{
+                                        placeholderTextColor: '#7c7c7c',
+                                        // onFocus: () => setisSearchEnable(true),
+                                        // onBlur: () => setisSearchEnable(true),
+                                        // value: search_value,
+                                        // onChangeText: (tex) => set_search_value(tex)
+                                    }}
+                                    onPress={(data, details = null) => { onSearchSelect(details) }}
+                                />
                             </View>
-                            <GooglePlacesAutocomplete
-                                styles={{
-                                    textInput: [WT('88%'), C.bgWhite, L.card, L.asC, L.aiC, L.br05, C.brLight, L.bR10, L.pH10],
-                                }}
-                                query={{
-                                    key: API.map_key,
-                                    language: 'en',
-                                }}
-                                placeholder='Search Location'
-                                fetchDetails={true}
-                                // ref={ref => {
-                                //     ref?.setAddressText(search_value)
-                                // }}
-                                textInputProps={{
-                                    placeholderTextColor: '#7c7c7c',
-                                    // onFocus: () => setisSearchEnable(true),
-                                    // onBlur: () => setisSearchEnable(true),
-                                    // value: search_value,
-                                    // onChangeText: (tex) => set_search_value(tex)
-                                }}
-                                onPress={(data, details = null) => { onSearchSelect(details) }}
-                            />
                         </View>
                     </View>
                 </View>

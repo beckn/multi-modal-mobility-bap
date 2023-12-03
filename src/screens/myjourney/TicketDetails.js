@@ -48,9 +48,7 @@ function TicketDetails({ navigation, route }) {
 
     useEffect(() => {
         try {
-            if (hasValue(itemData)) {
-                setTicketDetail(itemData)
-            }
+            setBustDetail()
         } catch (error) {
             console.log(error);
         }
@@ -58,13 +56,28 @@ function TicketDetails({ navigation, route }) {
 
     useEffect(() => {
         try {
-            if (hasValue(confirm_ride)) {
-                setTicketDetail(confirm_ride)
-            }
+            setBustDetail()
         } catch (error) {
             console.log(error);
         }
     }, [confirm_ride]);
+
+    function setBustDetail() {
+        try {
+            if (hasValue(itemData)) {
+                setTicketDetail(itemData)
+            } else {
+                if (hasValue(confirm_ride)) {
+                    const type = confirm_ride?.type ?? null
+                    if (type === "BUS") {
+                        setTicketDetail(confirm_ride)
+                    }
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
 
     useEffect(() => {
@@ -112,7 +125,6 @@ function TicketDetails({ navigation, route }) {
             console.log(error);
         }
     }
-    console.log(ticketDetail, 'ticketDetail');
 
     function downloadTicket() {
         try {

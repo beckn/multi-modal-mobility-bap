@@ -1,0 +1,6 @@
+module Pods_bap {
+  umbrella header "Pods-bap-umbrella.h"
+
+  export *
+  module * { export * }
+}

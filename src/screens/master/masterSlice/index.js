@@ -125,7 +125,6 @@ export const confirmRide = createAsyncThunk('master/confirmRide', async (data, {
             if (!hasValue(payloads)) {
                 return
             }
-            // dispatch(setCurrentRoute(payloads))
             await performPostRequest(API.confirm_ride, payloads).then((res) => {
                 const apiResponse = responseHandler(res)
                 if (hasValue(apiResponse)) {
@@ -286,10 +285,8 @@ export const getRideUpdates = createAsyncThunk('master/getRideUpdates', async (d
                     }
                 }, 30000);
             }
-            // console.log(isCompletedTrip(), 'autoBook1');
             if (code === "RIDE_IN_PROGRESS") {
                 if (isCompletedTrip()) {
-                    // console.log('autoBook2');
                     dispatch(confirmRide({ data: "", autoBook: "autoBook" }))
                 }
             }

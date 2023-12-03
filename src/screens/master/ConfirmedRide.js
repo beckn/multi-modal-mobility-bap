@@ -26,10 +26,8 @@ function ConfirmedRide({ navigation, route }) {
     const completed_trips = responseDataUser?.completed_trips ?? []
     const confirm_ride = responseDataMaster?.confirm_ride ?? null
     const rides_status = responseDataMaster?.rides_status ?? null
-    const agent = confirm_ride?.fulfillment?.agent ?? {}
-    const vehicle_detail = confirm_ride?.fulfillment?.vehicle ?? {}
-    const authorization = confirm_ride?.fulfillment?.start?.authorization ?? {}
     const ride_updates = responseDataMaster?.ride_updates?.descriptor ?? null
+    const rideDetail = responseDataMaster?.ride_updates ?? null
     const ride_status = responseDataUser?.ride_status ?? null
     const status_code = responseDataMaster?.ride_updates?.descriptor?.code ?? null
     var mapRef = useRef(null);
@@ -62,7 +60,6 @@ function ConfirmedRide({ navigation, route }) {
         latitudeDelta: API.LATITUDE_DELTA,
         longitudeDelta: API.LONGITUDE_DELTA,
     });
-    const [subTitle, setSubTitle] = useState("");
     const [rideDetails, setRideDetails] = useState({});
 
     useFocusEffect(
@@ -93,8 +90,8 @@ function ConfirmedRide({ navigation, route }) {
             if (hasValue(completed_trips) && completed_trips.length > 0) {
                 for (let index = 0; index < completed_trips.length; index++) {
                     const element = completed_trips[index];
-                    if (element.status != "SELECTED" && element.type === "AUTO") {
-                        if (element.type === "AUTO") {
+                    if (element.type === "AUTO") {
+                        if (element.status === "CONFIRMED") {
                             setRideDetails(element)
                             break;
                         }
@@ -105,11 +102,6 @@ function ConfirmedRide({ navigation, route }) {
         }, [completed_trips]),
     );
 
-    console.log(ride_updates?.code ?? "", 'ride_updates code');
-    // RIDE_ASSIGNED  RIDE_STARTED  RIDE_IN_PROGRESS  RIDE_COMPLETED 
-
-    // console.log(rides_status, 'rides_status');
-    // console.log(rideDetails, 'rideDetails');
     function fetchRideStatus() {
         try {
             if (hasValue(rides_status)) {
@@ -117,9 +109,14 @@ function ConfirmedRide({ navigation, route }) {
                     let payloads = {}
                     for (let index = 0; index < rides_status[0].details.length; index++) {
                         const element = rides_status[0].details[index];
-                        if (element.status != "SELECTED" && element.type === "AUTO") {
-                            payloads = element
-                            break;
+                        if (element.type === "AUTO") {
+                            if (element.status === "CONFIRMED") {
+                                payloads = element
+                                break;
+                            } else if (element.status === "IN_PROGRESS") {
+                                payloads = element
+                                break;
+                            }
                         }
                     }
                     dispatch(getRideUpdates({
@@ -128,12 +125,6 @@ function ConfirmedRide({ navigation, route }) {
                     }))
                 }
             }
-            // else {
-            //     dispatch(getRideUpdates({
-            //         "routeId": itemData?.routeId ?? "",
-            //         "order_id": itemData?.order_id ?? ""
-            //     }))
-            // }
         } catch (error) {
             console.log(error);
         }
@@ -143,30 +134,13 @@ function ConfirmedRide({ navigation, route }) {
             const code = ride_updates?.code ?? null
             dispatch(ride_status_state({ ride_status: hasValue(code) ? code : "RIDE_ASSIGNED" }))
             if (code === "RIDE_COMPLETED") {
-                // RootNavigation.navigate("RideCompleted", { itemData: itemData })
                 dispatch(ride_status_state({ ride_status: "RIDE_COMPLETED" }))
-                // dispatch(getRideUpdates({ "cancel": "CANCELED" })) 
             }
-            // if (code === "RIDE_IN_PROGRESS") {
-            //     onBookRide()
-            // }
             setLabels()
         } catch (error) {
             console.log(error);
         }
     }, [ride_updates]);
-
-    function onBookRide() {
-        try {
-            console.log(isCompletedTrip(), 'isCompletedTrip()');
-            if (isCompletedTrip()) {
-                console.log('autoBook');
-                dispatch(confirmRide({ data: "", autoBook: "autoBook" }))
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
 
     function setLabels() {
         try {
@@ -179,10 +153,8 @@ function ConfirmedRide({ navigation, route }) {
             }
             if (code === "RIDE_IN_PROGRESS") {
                 setHeaderLabel(name)
-                setSubTitle("Trip Started")
             } else {
                 setHeaderLabel(STR.strings.ride_is_confirmed)
-                setSubTitle("Auto is on the way")
             }
         } catch (error) {
             console.log(error);
@@ -410,9 +382,7 @@ function ConfirmedRide({ navigation, route }) {
                         <Image style={[HT(35), WT(35)]} source={Images.auto_black} />
                         <View style={[WT(8)]} />
                         <View style={[]}>
-                            {/* <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{rideDetails?.fulfillment?.state?.descriptor?.name ?? "Auto is on the way"}</Text> */}
                             <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{journeyLabel()}</Text>
-                            {/* <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{subTitle}</Text> */}
                             {/* <Text style={[C.lColor, F.ffM, F.fsOne2]}>NA</Text> */}
                         </View>
                     </View>
@@ -479,7 +449,7 @@ function ConfirmedRide({ navigation, route }) {
                     <View style={[L.jcC, L.aiC, L.even]}>
                         <Image style={[HT(30), WT(30), L.bR30]} source={Images.avatar} />
                         <View style={[WT(7)]} />
-                        <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{rideDetails?.fulfillment?.agent?.name ?? ""}</Text>
+                        <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{rideDetail?.details?.agent?.name ?? ""}</Text>
                     </View>
                     {!hasValue(hideCode) ?
                         (<View style={[L.jcC, L.aiC, L.even, HT(50)]}>
@@ -487,16 +457,14 @@ function ConfirmedRide({ navigation, route }) {
                             <View style={[WT(5)]} />
                             <Text style={[C.fcBlack, F.ffB, F.fsOne7]}>{rideDetails?.fulfillment?.start?.authorization?.token ?? ""}</Text>
                         </View>) :
-                        (<View style={[L.jcC, L.aiC, L.even, HT(50)]}>
-                            {/* <Text style={[C.fcBlack, F.ffB, F.fsOne7]}>{hideCode}</Text> */}
-                        </View>)
+                        (<View style={[L.jcC, L.aiC, L.even, HT(50)]}></View>)
                     }
                 </View>
                 <TouchableOpacity style={[WT('100%'), L.pH10, L.even, L.aiC, L.jcSB]}
-                    onPress={() => { onCall(rideDetails?.fulfillment?.agent?.phone ?? "") }}>
+                    onPress={() => { onCall(rideDetail?.details?.agent?.phone ?? "") }}>
                     <View style={[]}>
-                        <Text style={[C.fcBlack, F.ffB, F.fsOne8]}>{rideDetails?.fulfillment?.vehicle?.registration ?? ""}</Text>
-                        <Text style={[C.lColor, F.ffM, F.fsOne3]}>{rideDetails?.fulfillment?.vehicle?.category ?? ""}</Text>
+                        <Text style={[C.fcBlack, F.ffB, F.fsOne8]}>{rideDetail?.details?.vehicle?.registration ?? ""}</Text>
+                        <Text style={[C.lColor, F.ffM, F.fsOne3]}>{rideDetail?.details?.vehicle?.category ?? ""}</Text>
                     </View>
                     <View style={[L.jcC, L.aiC, L.even, HT(50)]}>
                         <Image style={[HT(30), WT(30), L.bR30]} source={Images.ic_call} />

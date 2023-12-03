@@ -8,7 +8,6 @@ import { Header, Loader, TouchableOpacity } from '../../components';
 import { useSelector, useDispatch } from 'react-redux'
 import { dateTime, hasValue, toFixed } from '../../Utils';
 import { getHistory, searchRoutes } from '../master/masterSlice';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import moment from 'moment';
 STR = require('../../languages/strings');
 
@@ -31,6 +30,7 @@ function MyJourney({ navigation, route }) {
             console.log(error);
         }
     }, []);
+
     useEffect(() => {
         try {
             set_listData(history)
@@ -81,14 +81,12 @@ function MyJourney({ navigation, route }) {
     }
     function setRoutes(item) {
         try {
-            console.log(item, 'item');
             let select_route = []
             if (item.type === "MULTI") {
                 select_route = item?.details ?? []
             } else {
                 select_route = [item]
             }
-            console.log(select_route, 'select_route');
             if (Array.isArray(select_route) && select_route.length > 0) {
                 let tmpArray = []
                 select_route.forEach((element, i) => {
@@ -385,7 +383,6 @@ function MyJourney({ navigation, route }) {
             </View>
         )
     }
-    console.log(trackingData, 'trackingData  ');
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
             <Header navigation={navigation} hardwareBack={'Dashboard'} left_press={'Dashboard'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={STR.strings.my_journeys} />

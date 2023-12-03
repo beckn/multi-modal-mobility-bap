@@ -117,22 +117,6 @@ function RideCompleted({ navigation, route }) {
                 android: `geo:${destination_lat_lng.latitude},${destination_lat_lng.longitude}?center=${destination_lat_lng.latitude},${destination_lat_lng.longitude}&q=${destination_lat_lng.latitude},${destination_lat_lng.longitude}&z=16`,
             });
             Linking.openURL(url);
-            // var scheme = Platform.OS === 'ios' ? 'maps:' : 'geo:';
-            // var url = scheme + `${source_lat_lng.latitude},${source_lat_lng.longitude}`;
-            // // var url = scheme + `origin=${source_lat_lng.latitude},${source_lat_lng.longitude}&destination=${destination_lat_lng.latitude},${destination_lat_lng.longitude}`;
-            // Linking.openURL(url);
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    function onBookRide() {
-        try {
-            if (isCompletedTrip(0)) {
-                set_modalConfirm(true)
-                dispatch(confirmRide({}))
-            } else {
-                RootNavigation.replace("RateTrip")
-            }
         } catch (error) {
             console.log(error);
         }
@@ -182,10 +166,6 @@ function RideCompleted({ navigation, route }) {
                         <View style={[WT(7)]} />
                         <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{ride_updates?.details?.agent?.name ?? ""}</Text>
                     </View>
-                    {/* <View style={[L.jcC, L.aiC, L.even, HT(50)]}>
-                        <View style={[WT(5)]} />
-                        <Text style={[C.fcBlack, F.ffB, F.fsOne7]}>{authorization?.token ?? ""}</Text>
-                    </View> */}
                 </View>
                 <TouchableOpacity style={[WT('100%'), L.pH10, L.even, L.aiC, L.jcSB]}
                     onPress={() => { onCall(ride_updates?.details?.agent?.phone ?? "") }}>
@@ -199,9 +179,6 @@ function RideCompleted({ navigation, route }) {
                 </TouchableOpacity>
                 <View style={[HT(100)]} />
             </ScrollView>
-            {/* <View style={[L.dpARL, { bottom: 10 }]}>
-                <Button onPress={() => { onBookRide() }} style={[WT('90%'), HT(45)]} label={"Next"} />
-            </View> */}
             {responseDataMaster.isLoading === true &&
                 <Modal
                     transparent={true}
@@ -217,9 +194,6 @@ function RideCompleted({ navigation, route }) {
                             <Text style={[F.fsOne5, F.ffM, C.fcWhite, L.taC, L.mT10]}>{STR.strings.hold_on_this_may_take_a_few_seconds}</Text>
                             <View style={[HT('25%')]} />
                             <Image style={[WT('80%'), HT(300), L.asC]} source={Images.booking_loader} />
-                            {/* <TouchableOpacity style={[HT(50), L.pH10, L.asC, L.jcC, L.mT20]} onPress={() => { onCancelBooking() }}>
-                            <Text style={[F.fsOne6, F.ffM, C.fcWhite, L.taC, F.tDL]}>{STR.strings.cancel_booking}</Text>
-                        </TouchableOpacity> */}
                         </View>
                     </View>
                 </Modal>

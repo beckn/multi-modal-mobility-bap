@@ -8,7 +8,7 @@ import { Header, TouchableOpacity, Button } from '../../components';
 import { useSelector, useDispatch } from 'react-redux'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RootNavigation from '../../Navigation/RootNavigation';
-import { onLogout } from '../user/userSlice';
+import { doLogout } from '../user/userSlice';
 STR = require('../../languages/strings');
 
 function MenuScreen({ navigation }) {
@@ -44,7 +44,6 @@ function MenuScreen({ navigation }) {
             if (item.id === 1) {
                 RootNavigation.navigate("MyJourney")
             } else if (item.id === 2) {
-                // dispatch(onLogout({}))
                 set_modalLogout(true)
             }
         } catch (error) {
@@ -88,7 +87,7 @@ function MenuScreen({ navigation }) {
                         <View style={[HT(10)]} />
                         <Text style={[C.fcBlack, F.ffM, F.fsOne5, L.taC]}>Stay signed in to book your next trip faster</Text>
                         <View style={[HT(25)]} />
-                        <Button onPress={() => { dispatch(onLogout({})); set_modalLogout(false) }} style={[WT('100%'), HT(45)]} label={"Confirm sign-out"} />
+                        <Button onPress={() => { dispatch(doLogout({})); set_modalLogout(false) }} style={[WT('100%'), HT(45)]} label={"Confirm sign-out"} />
                         <View style={[HT(10)]} />
                         <TouchableOpacity style={[HT(40), L.jcC, L.aiC, L.asC]} onPress={() => set_modalLogout(false)}>
                             <Text style={[C.fcBlack, F.ffM, F.fsOne5, L.taC]}>Cancel</Text>

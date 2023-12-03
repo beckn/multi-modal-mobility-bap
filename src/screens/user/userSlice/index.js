@@ -83,39 +83,11 @@ export const updateUserDetails = createAsyncThunk('user/updateUserDetails', asyn
     })
 })
 
-export const onLogout = createAsyncThunk('user/onLogout', async (data, { dispatch }) => {
-    try {
-        dispatch(doLogout())
-        // Alert.alert(
-        //     '',
-        //     STR.strings.are_you_sure_want_to_logout,
-        //     [
-        //         { text: STR.strings.cancel, onPress: () => console.log('CANCEL Pressed'), style: 'cancel' },
-        //         { text: STR.strings.ok, onPress: () => dispatch(doLogout()) },
-        //     ],
-        //     { cancelable: false }
-        // )
-    } catch (error) {
-        console.log(error);
-    }
-})
 export const doLogout = createAsyncThunk('user/doLogout', async (data, { dispatch }) => {
     dispatch(clear_state())
     dispatch(clear_master_state())
     clearStorage()
-    // MyToast(apiResponse?.data?.message ?? "")
     RootNavigation.replace("Login")
-    // await performGetRequest(API.logout, data).then((res) => {
-    //     const apiResponse = responseHandler(res)
-    //     dispatch(clear_state())
-    //     dispatch(clear_master_state())
-    //     clearStorage()
-    //     MyToast(apiResponse?.data?.message ?? "")
-    //     RootNavigation.replace("Login")
-    // }).catch(error => {
-    //     const apiResponse = responseHandler(error.response);
-    //     dispatch(common_state({}))
-    // })
 })
 export const verifyMobileNumber = createAsyncThunk('user/verifyMobileNumber', async (data, { dispatch }) => {
     dispatch(common_state({ isLoading: true }))

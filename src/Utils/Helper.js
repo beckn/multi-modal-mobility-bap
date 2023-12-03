@@ -189,7 +189,7 @@ export const isCompletedTrip = (flag) => {
       for (let index = 0; index < items.length; index++) {
         const element = items[index];
         if (hasValue(flag) && flag === "isMulti") {
-          if (element.status === "SELECTED" || element.status === "CONFIRMED" || element.status === "IN_PROGRESS") {
+          if (element.status === "SELECTED" || element.status === "CONFIRMED" || element.status === "IN_PROGRESS" || element.status === "FAILED") {
             is_find = element
             break;
           }

@@ -142,7 +142,6 @@ function EndTrip({ navigation, route }) {
             console.log(error);
         }
     }
-    console.log(routeCoordinates, 'routeCoordinates');
     const radiusToDelta = (radius, lat, lng) => {
         try {
             setDistance(distance)

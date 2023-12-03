@@ -172,13 +172,11 @@ class Header extends React.Component {
 
 import { connect } from "react-redux";
 import { filter_state, cancelRide } from '../../screens/master/masterSlice';
-import { onLogout } from '../../screens/user/userSlice';
 const mapStateToProps = (state) => {
     return { responseData: state }
 }
 const mapDispatchToProps = (dispatch) => {
     return {
-        onLogout: (payloads) => { dispatch(onLogout(payloads)) },
         filter_state: (payloads) => { dispatch(filter_state(payloads)) },
         cancelRide: (payloads) => { dispatch(cancelRide(payloads)) },
     }

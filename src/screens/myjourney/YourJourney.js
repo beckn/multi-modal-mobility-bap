@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-    View, Text, FlatList, Image, ScrollView
+    View, Text, FlatList, Image, ScrollView, Modal, Platform
 } from 'react-native';
 import { Images } from '../../commonStyles/Images'
 import { C, F, HT, L, WT, h } from '../../commonStyles/style-layout';
@@ -12,7 +12,7 @@ import { API } from '../../shared/API-end-points';
 import MapViewDirections from 'react-native-maps-directions';
 import RootNavigation from '../../Navigation/RootNavigation';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { busStatus, confirmRide, current_ride_coordinates_state, getRideUpdates, current_ride_region_state, ridesStatus } from '../master/masterSlice';
+import { busStatus, confirmRide, ridesStatus } from '../master/masterSlice';
 import { ride_status_state } from '../user/userSlice';
 STR = require('../../languages/strings');
 
@@ -20,8 +20,6 @@ function YourJourney({ navigation, route }) {
     const dispatch = useDispatch()
     const responseDataUser = useSelector(state => state.user)
     const responseDataMaster = useSelector(state => state.master)
-    const ride_vehicle = responseDataUser?.ride_vehicle ?? null
-    const ride_status = responseDataUser?.ride_status ?? null
     const rides_status = responseDataMaster?.rides_status ?? null
     const route_coordinates = responseDataMaster?.current_ride_coordinates ?? []
     const ride_updates = responseDataMaster?.ride_updates?.descriptor ?? null
@@ -31,8 +29,6 @@ function YourJourney({ navigation, route }) {
         latitudeDelta: API.LATITUDE_DELTA,
         longitudeDelta: API.LONGITUDE_DELTA,
     }
-    const select_route = responseDataMaster?.select_route ?? null
-    const confirm_ride = responseDataMaster?.confirm_ride ?? null
     const completed_trips = responseDataUser?.completed_trips ?? []
     var mapRef = useRef(null);
     var markerRef = useRef(null);
@@ -41,6 +37,16 @@ function YourJourney({ navigation, route }) {
     const [quantity, set_quantity] = useState(0);
     const [modalConfirm, set_modalConfirm] = useState(false);
     const [rideDetails, setRideDetails] = useState({});
+    const [currentRideId, setCurrentRideId] = useState(null);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            set_modalConfirm(false);
+            return () => {
+                set_modalConfirm(false);
+            };
+        }, []),
+    );
 
     useFocusEffect(
         React.useCallback(() => {
@@ -98,50 +104,34 @@ function YourJourney({ navigation, route }) {
             const status = element?.status ?? null
             const code = ride_updates?.code ?? null
             if (type === "AUTO") {
-                // if (code === "RIDE_IN_PROGRESS") {
                 if (status === "IN_PROGRESS") {
                     setHeaderLabel("Your Journey")
-                    // fetchRideStatus()
+                    setCurrentRideId(element?.id ?? "")
                 } else if (status === "CONFIRMED") {
                     setHeaderLabel("Your Journey is confirmed")
-                    // fetchRideStatus()
+                    setCurrentRideId(element?.id ?? "")
                 } else if (status === "COMPLETED") {
                     setHeaderLabel("Your Journey")
+                    setCurrentRideId(element?.id ?? "")
                 } else {
                     setHeaderLabel("Your Journey")
                 }
             } else {
                 if (status === "CONFIRMED") {
                     setHeaderLabel("Your Journey is confirmed")
+                    setCurrentRideId(element?.id ?? "")
                     if (quantity === 1) {
-                        setHeaderLabel("Bus journey has started")
+                        // setHeaderLabel("Bus journey has started")
+                        setHeaderLabel("Your Journey")
+                        setCurrentRideId(element?.id ?? "")
                     }
                 } else if (status === "COMPLETED") {
                     setHeaderLabel("Bus journey has Completed")
+                    setCurrentRideId(element?.id ?? "")
                 } else if (status === "IN_PROGRESS") {
-                    setHeaderLabel("Bus journey has started")
-                }
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    function fetchRideStatus() {
-        try {
-            if (hasValue(rides_status)) {
-                if (hasValue(rides_status) && Array.isArray(rides_status) && rides_status.length > 0) {
-                    let payloads = {}
-                    for (let index = 0; index < rides_status[0].details.length; index++) {
-                        const element = rides_status[0].details[index];
-                        if (element.status != "SELECTED" && element.type === "AUTO") {
-                            payloads = element
-                            break;
-                        }
-                    }
-                    dispatch(getRideUpdates({
-                        "routeId": rides_status[0].routeId,
-                        "order_id": payloads?.order_id ?? ""
-                    }))
+                    // setHeaderLabel("Bus journey has started")
+                    setHeaderLabel("Your Journey")
+                    setCurrentRideId(element?.id ?? "")
                 }
             }
         } catch (error) {
@@ -158,7 +148,12 @@ function YourJourney({ navigation, route }) {
                         RootNavigation.navigate("ConfirmedRide", { itemData: item })
                     }
                 } else {
-                    onBookRide()
+                    if (isCompletedTrip(0)) {
+                        set_modalConfirm(true)
+                        dispatch(confirmRide({}))
+                    } else {
+                        RootNavigation.replace("RateTrip")
+                    }
                 }
             } else {
                 if (item.status === "CONFIRMED") {
@@ -167,8 +162,6 @@ function YourJourney({ navigation, route }) {
                     RootNavigation.navigate("TicketDetails", { itemData: item })
                 } else if (item.status === "COMPLETED") {
                     RootNavigation.navigate("TicketDetails", { itemData: item })
-                } else {
-                    // onBookRide()
                 }
             }
 
@@ -179,6 +172,7 @@ function YourJourney({ navigation, route }) {
 
     const renderItem = (item, index) => {
         let image = item.type === "AUTO" ? Images.auto : Images.bus_full
+        let title = item.type === "AUTO" ? "Auto details" : "Bus details"
         let sub_title = ""
         let showPrice = false
         if (item.status === "SELECTED") {
@@ -196,27 +190,76 @@ function YourJourney({ navigation, route }) {
             sub_title = "Ride failed"
         }
         return (
-            <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
-                onPress={() => { onItemPress(item) }}>
-                <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
-                    <View style={[WT('50%'), L.even, L.aiC]}>
-                        <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
-                            <Image style={[HT(18), WT(18)]} source={image} />
+            <>
+                {currentRideId === item.id &&
+                    <View style={[WT('95%'), HT(300), L.asC, L.bR10, L.mT8, L.mB10, { overflow: 'hidden' }, L.card, L.br05, C.brLight]}>
+                        <MapView
+                            provider={PROVIDER_GOOGLE} // remove if not using Google Maps
+                            ref={ref => mapRef = ref}
+                            style={[WT('100%'), HT('100%')]}
+                            showsMyLocationButton={true}
+                            followsUserLocation={true}
+                            showsCompass={true}
+                            region={region_data}>
+                            {hasValue(route_coordinates) && route_coordinates.length > 0 && <>
+                                <>
+                                    {route_coordinates.map(function (element, index) {
+                                        return (<>
+                                            {hasValue(element?.icon ?? "") ?
+                                                (<Marker coordinate={element}>
+                                                    {hasValue(element?.icon ?? "") &&
+                                                        <Image source={element?.icon} resizeMode="contain" style={[WT(20), HT(20)]} />
+                                                    }
+                                                </Marker>) :
+                                                (<>
+                                                    {route_coordinates.length == index + 1 &&
+                                                        <Marker coordinate={element} />
+                                                    }
+                                                </>)
+                                            }
+                                        </>)
+                                    })}
+                                </>
+                                <MapViewDirections
+                                    origin={route_coordinates[0]}
+                                    destination={route_coordinates.length > 1 ? route_coordinates[route_coordinates.length - 1] : route_coordinates[0]}
+                                    apikey={API.map_key}
+                                    mode='DRIVING'
+                                    strokeWidth={4}
+                                    strokeColor={C.strokeColor}
+                                    fillColor={C.fillColor}
+                                    waypoints={route_coordinates}
+                                    optimizeWaypoints={false}
+                                    splitWaypoints={true}
+                                    resetOnChange={false}
+                                    precision={'high'}
+                                />
+                            </>}
+                        </MapView>
+                    </View>
+                }
+                <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
+                    onPress={() => { onItemPress(item) }}>
+                    <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
+                        <View style={[WT('50%'), L.even, L.aiC]}>
+                            <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
+                                <Image style={[HT(18), WT(18)]} source={image} />
+                            </View>
+                            <View style={[WT(8)]} />
+                            <View style={[]}>
+                                <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{title}</Text>
+                                <Text style={[C.lColor, F.ffM, F.fsOne2]}>{sub_title}</Text>
+                            </View>
                         </View>
-                        <View style={[WT(8)]} />
-                        <View style={[]}>
-                            <Text style={[C.fcBlack, F.ffB, F.fsOne4]}>{item?.type ?? "NA"}</Text>
-                            <Text style={[C.lColor, F.ffM, F.fsOne2]}>{sub_title}</Text>
+                        <View style={[WT('50%'), L.aiR]}>
+                            {showPrice &&
+                                <Text style={[C.fcBlack, F.ffB, F.fsOne4]}
+                                >{hasValue(item?.price?.value ?? "") ? toFixed(item?.price?.value ?? "") != 0 ? "Rs " + toFixed(item?.price?.value ?? "") : "Rs " + item?.price?.value ?? "" : ""}</Text>
+                            }
                         </View>
                     </View>
-                    <View style={[WT('50%'), L.aiR]}>
-                        {showPrice &&
-                            <Text style={[C.fcBlack, F.ffB, F.fsOne4]}
-                            >{hasValue(item?.price?.value ?? "") ? toFixed(item?.price?.value ?? "") != 0 ? "Rs " + toFixed(item?.price?.value ?? "") : "Rs " + item?.price?.value ?? "" : ""}</Text>
-                        }
-                    </View>
-                </View>
-            </TouchableOpacity>
+                </TouchableOpacity>
+            </>
         )
     }
 
@@ -282,7 +325,7 @@ function YourJourney({ navigation, route }) {
             }
             return label
         } catch (error) {
-            return "Has you your ride started?"
+            return "Has your ride started?"
         }
     }
 
@@ -305,81 +348,47 @@ function YourJourney({ navigation, route }) {
             return false
         }
     }
-    console.log(route_coordinates, 'route_coordinates');
     return (
         <View style={[WT('100%'), HT('100%'), C.bgScreen2]}>
             <Header navigation={navigation} hardwareBack={'Dashboard'} left_press={'Dashboard'} height={HT(70)} ic_left_style={[WT(80), HT(80)]} card={false} style={[C.bgTrans]} ic_left={Images.back} label_left={headerLabel} />
             {responseDataMaster.isLoading && <Loader isLoading={responseDataMaster.isLoading} />}
             <ScrollView>
-                <View style={[WT('95%'), HT(300), L.asC, L.bR10, L.mT10, { overflow: 'hidden' }, L.card, L.br05, C.brLight]}>
-                    <MapView
-                        provider={PROVIDER_GOOGLE} // remove if not using Google Maps
-                        ref={ref => mapRef = ref}
-                        style={[WT('100%'), HT('100%')]}
-                        showsMyLocationButton={true}
-                        followsUserLocation={true}
-                        showsCompass={true}
-                        region={region_data}>
-                        {hasValue(route_coordinates) && route_coordinates.length > 0 && <>
-                            <>
-                                {route_coordinates.map(function (element, index) {
-                                    return (<>
-                                        {hasValue(element?.icon ?? "") ?
-                                            (<Marker coordinate={element}>
-                                                {hasValue(element?.icon ?? "") &&
-                                                    <Image source={element?.icon} resizeMode="contain" style={[WT(20), HT(20)]} />
-                                                }
-                                            </Marker>) :
-                                            (<>
-                                                {route_coordinates.length == index + 1 &&
-                                                    <Marker coordinate={element} />
-                                                }
-                                            </>)
-                                        }
-                                    </>)
-                                })}
-                            </>
-                            <MapViewDirections
-                                origin={route_coordinates[0]}
-                                destination={route_coordinates.length > 1 ? route_coordinates[route_coordinates.length - 1] : route_coordinates[0]}
-                                apikey={API.map_key}
-                                mode='DRIVING'
-                                strokeWidth={4}
-                                strokeColor={C.strokeColor}
-                                fillColor={C.fillColor}
-                                waypoints={route_coordinates}
-                                optimizeWaypoints={false}
-                                splitWaypoints={true}
-                                resetOnChange={false}
-                                precision={'high'}
-                            />
-                        </>}
-                    </MapView>
-                </View>
                 <View style={[L.mT20]}>
                     <FlatList
                         keyboardShouldPersistTaps='always'
                         keyExtractor={(item, index) => String(index)}
                         data={vehicleData}
                         renderItem={({ item, index }) => renderItem(item, index)}
-                        contentContainerStyle={[{ paddingBottom: h(0) }]}
+                        contentContainerStyle={[{ paddingBottom: h(10) }]}
                     />
                 </View>
                 <View style={[HT(100)]} />
             </ScrollView>
-            {/* <View style={[C.bgTrans, L.pH10, L.dpARL]}>
-                <TouchableOpacity onPress={() => { onBookRide() }}
-                    style={[WT('100%'), HT(45), L.br05, C.bgBlack, L.bR5, L.jcC, L.aiC]}>
-                    <Text style={[C.fcWhite, F.ffB, F.fsOne5, L.taC]}>Next</Text>
-                </TouchableOpacity>
-                <View style={[HT(15)]} />
-            </View> */}
             {busBtn() &&
                 <View style={[C.bgWhite, L.card, C.brLight, L.br05, L.aiC, L.jcC, HT(150), L.dpARL, { bottom: 0 }]}>
                     <Text style={[C.fcBlack, F.ffM, L.taC, F.fsOne5]}>{journeyLabel()}</Text>
                     <View style={[HT(25)]} />
                     <Button onPress={() => { onSubmit(quantity + 1) }} style={[WT('90%'), HT(45)]} label={"Yes"} />
                 </View>
+            }
+            {responseDataMaster.isLoading == true &&
+                <Modal
+                    transparent={true}
+                    supportedOrientations={['portrait', 'landscape']}
+                    visible={modalConfirm}
+                    animationType='fade'
+                    onRequestClose={() => set_modalConfirm(false)}>
+                    <View style={[WT('100%'), HT('100%'), C.bgTPH, L.jcC, L.aiC]}>
+                        <View style={[WT('100%'), HT('100%'), C.bgTPH, L.aiC]}>
+                            <View style={[HT(Platform.OS == 'ios' ? '5%' : '0%'), WT('100%')]} />
+                            <View style={[HT('5%')]} />
+                            <Text style={[F.fsOne9, F.ffM, C.fcWhite, L.taC]}>{STR.strings.booking_your_ride}</Text>
+                            <Text style={[F.fsOne5, F.ffM, C.fcWhite, L.taC, L.mT10]}>{STR.strings.hold_on_this_may_take_a_few_seconds}</Text>
+                            <View style={[HT('25%')]} />
+                            <Image style={[WT(250), HT(250), L.asC]} source={Images.booking_loader} />
+                        </View>
+                    </View>
+                </Modal>
             }
         </View>
     );
