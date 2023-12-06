@@ -6,7 +6,7 @@ import { Images } from '../../commonStyles/Images'
 import { C, F, HT, L, WT, h, WTD } from '../../commonStyles/style-layout';
 import { Header, TouchableOpacity, TextField, Button, Loader } from '../../components';
 import { useSelector, useDispatch } from 'react-redux'
-import { hasValue, isCompletedTrip } from '../../Utils';
+import { hasValue, isCompletedTrip, dateTime } from '../../Utils';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { API } from '../../shared/API-end-points';
@@ -358,6 +358,24 @@ function ConfirmedRide({ navigation, route }) {
             return "Auto is on the way"
         }
     }
+    function journeySubLabel() {
+        try {
+          let label = "Arriving in few minutes";
+          const code = ride_updates?.code ?? "";
+          if (code === "RIDE_IN_PROGRESS") {
+            const startTime = responseDataMaster?.ride_updates?.details?.startTime ?? "";
+            const formattedStartTime = dateTime(startTime, null, "hh:mm A");
+            label = `Trip has started, ETA ${formattedStartTime}`;
+          } else if (code === "RIDE_COMPLETED") {
+            const endTime = responseDataMaster?.ride_updates?.details?.endTime ?? "";
+            const formattedEndTime = dateTime(endTime, null, "hh:mm A");
+            label = `Trip ended ${formattedEndTime}`;
+          }
+          return label;
+        } catch (error) {
+          return "Arriving in few minutes";
+        }
+    }
     function isCancelAble() {
         try {
             let status = false
@@ -383,6 +401,7 @@ function ConfirmedRide({ navigation, route }) {
                         <View style={[WT(8)]} />
                         <View style={[]}>
                             <Text style={[C.fcBlack, F.ffB, F.fsOne5]}>{journeyLabel()}</Text>
+                            <Text style={[C.fcBlack, F.fw3, F.fsOne]}>{journeySubLabel()}</Text>
                             {/* <Text style={[C.lColor, F.ffM, F.fsOne2]}>NA</Text> */}
                         </View>
                     </View>
