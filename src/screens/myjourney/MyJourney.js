@@ -80,17 +80,17 @@ function MyJourney({ navigation, route }) {
         }
     }
     function setRoutes(item) {
-        try {
+                try {
             let select_route = []
             if (item.type === "MULTI") {
                 select_route = item?.details ?? []
             } else {
                 select_route = [item]
             }
-            if (Array.isArray(select_route) && select_route.length > 0) {
+                        if (Array.isArray(select_route) && select_route.length > 0) {
                 let tmpArray = []
                 select_route.forEach((element, i) => {
-                    let totalDuration = ""
+                                        let totalDuration = ""
                     let etd = ""
                     let eta = ""
                     if (element.type === "AUTO") {
@@ -103,8 +103,8 @@ function MyJourney({ navigation, route }) {
                     const tmpTime = hasValue(totalDuration) ? parseInt(totalDuration) : 0
                     const startTime = element?.startTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
 
-                    etd = element?.startTime ?? moment().add(0, 'minutes').format('hh:mm A');
-                    eta = element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
+                    etd = element.type === "AUTO"?  dateTime(element?.details?.startTime, null, "hh:mm A") : element?.startTime  ?? moment().add(0, 'minutes').format('hh:mm A');
+                    eta = element.type === "AUTO"?  dateTime(element?.details?.endTime, null, "hh:mm A") : element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
 
                     let tmpJasonWalkStart = null
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
