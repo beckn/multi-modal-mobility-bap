@@ -80,17 +80,17 @@ function MyJourney({ navigation, route }) {
         }
     }
     function setRoutes(item) {
-                try {
+            try {
             let select_route = []
             if (item.type === "MULTI") {
                 select_route = item?.details ?? []
             } else {
                 select_route = [item]
             }
-                        if (Array.isArray(select_route) && select_route.length > 0) {
+                if (Array.isArray(select_route) && select_route.length > 0) {
                 let tmpArray = []
                 select_route.forEach((element, i) => {
-                                        let totalDuration = ""
+                    let totalDuration = ""
                     let etd = ""
                     let eta = ""
                     if (element.type === "AUTO") {
