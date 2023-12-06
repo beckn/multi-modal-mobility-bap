@@ -103,8 +103,8 @@ function MyJourney({ navigation, route }) {
                     const tmpTime = hasValue(totalDuration) ? parseInt(totalDuration) : 0
                     const startTime = element?.startTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
 
-                    etd = element?.startTime ?? moment().add(0, 'minutes').format('hh:mm A');
-                    eta = element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
+                    etd = element.type === "AUTO"?  dateTime(element?.details?.startTime, null, "hh:mm A") : element?.startTime  ?? moment().add(0, 'minutes').format('hh:mm A');
+                    eta = element.type === "AUTO"?  dateTime(element?.details?.endTime, null, "hh:mm A") : element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
 
                     let tmpJasonWalkStart = null
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
