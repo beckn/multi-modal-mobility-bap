@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import moment from 'moment';
 import {
     View, Text, Linking, Image, ScrollView, Modal, FlatList, Platform
 } from 'react-native';
@@ -217,7 +218,7 @@ function TicketDetails({ navigation, route }) {
                         {/* <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]} numberOfLines={1}>{ticketDetail?.validFrom ?? ""}</Text>
                         <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]} numberOfLines={1}>{ticketDetail?.validTo ?? ""}</Text> */}
                         <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{dateTime(ticketDetail?.validFrom ?? "", "", "hh:mm A, DD-MMM-YYYY")}</Text>
-                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{dateTime(ticketDetail?.validTo ?? "", "", "hh:mm A, DD-MMM-YYYY")}</Text>
+                        <Text style={[C.lColor, F.ffM, F.fsOne3, L.mT6]}>{moment.utc(ticketDetail?.validTo ?? "" ).format('hh:mm A, DD-MMM-YYYY')}</Text>
                     </View>
                 </View>
                 <View style={[HT(200)]} />
