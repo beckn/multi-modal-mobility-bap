@@ -29,5 +29,6 @@ export const Images = {
 	route: require('../assets/images/route.png'),
 	right_arrow: require('../assets/images/right-arrow.png'),
 	walking: require('../assets/images/walking.png'),
+	bus_Stop: require('../assets/images/bus-stop.png'),
 	booking_loader: require('../assets/images/booking-loader.gif'),
 } 

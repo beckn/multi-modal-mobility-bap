@@ -45,6 +45,10 @@ export const C = StyleSheet.create({
   fcVLGray: { color: '#CBCBCB' },
   fcVLightGray: { color: '#E4E4E7' },
   fcYellow: { color: '#D98405' },
+  fcGrey: { color: '#818181' },
+  fcDarkGrey: { color: '#807674' },
+  fcGrey: { color: '#807674' },
+  fcLightGrey: { color: '#BBB4B5' },
 
   brLightGray: { color: '#A1A1AA' },
   brLight: { borderColor: '#ccc' },

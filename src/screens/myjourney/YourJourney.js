@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
     View, Text, FlatList, Image, ScrollView, Modal, Platform
 } from 'react-native';
@@ -38,6 +39,9 @@ function YourJourney({ navigation, route }) {
     const [modalConfirm, set_modalConfirm] = useState(false);
     const [rideDetails, setRideDetails] = useState({});
     const [currentRideId, setCurrentRideId] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [distance, setDistance] = useState();
+    const [itemData, setItemData] = useState();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -62,6 +66,12 @@ function YourJourney({ navigation, route }) {
     useEffect(() => {
         setJourneyData()
     }, [completed_trips]);
+
+    useEffect(()=>{
+        if(distance == 2 && !showModal && itemData?.status !== "COMPLETED"){
+            setShowModal(true)
+        }
+    },[vehicleData])
 
     function setJourneyData() {
         try {
@@ -169,7 +179,23 @@ function YourJourney({ navigation, route }) {
             console.log(error);
         }
     }
-
+    const getDistance = (startLocation, endLocation) => {
+        const earthRadius = 6371;     
+        const toRadians = (angle) => {
+          return (angle * Math.PI) / 180;
+        };    
+        const dLat = toRadians(endLocation.latitude - startLocation.latitude);
+        const dLon = toRadians(endLocation.longitude - startLocation.longitude);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRadians(startLocation.latitude)) *
+            Math.cos(toRadians(endLocation.latitude)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2); 
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = earthRadius * c; 
+        return distance;
+    };   
     const renderItem = (item, index) => {
         let image = item.type === "AUTO" ? Images.auto : Images.bus_full
         let title = item.type === "AUTO" ? "Auto details" : "Bus details"
@@ -188,6 +214,18 @@ function YourJourney({ navigation, route }) {
             showPrice = true
         } else if (item.status === "FAILED") {
             sub_title = "Ride failed"
+        }
+        if(item.type == "AUTO"){
+            const startLocation = {};
+            const endLocation = {};
+            const endGps = item?.fulfillment?.end?.location?.gps?.split(",");
+            endLocation.latitude = endGps[0]
+            endLocation.longitude = endGps[1]
+            const startGps = item?.fulfillment?.start?.location?.gps?.split(",");
+            startLocation.latitude = startGps[0]
+            startLocation.longitude = startGps[1]
+            setDistance(getDistance(startLocation,endLocation))
+            setItemData(item);
         }
         return (
             <>
@@ -390,6 +428,46 @@ function YourJourney({ navigation, route }) {
                     </View>
                 </Modal>
             }
+            {showModal && 
+                <Modal
+                    transparent={true}
+                    supportedOrientations={['portrait', 'landscape']}
+                    visible={showModal}
+                    animationType='fade'
+                    onRequestClose={() => setShowModal(false)}>
+                    <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
+                        <View style={[C.bgWhite,L.p10]}>
+                            <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowModal(false)}>
+                                <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
+                            </TouchableOpacity>
+                        <View style={[HT(15)]} />
+                            <View style={[L.p20]} >
+                                <View style={[L.even,L.aiC,L.asC]}>
+                                <Image style={[HT(18), WT(20),L.asC]} source={Images.bus_Stop ?? ""} />
+                                <Text style={[L.asC , C.fcGrey]} >Just 5 mins away from bus stop!</Text>
+                                </View>
+                                <Text style={[L.asC,C.fcLightGrey]}>We are almost there. Shall we book your auto ride now.</Text>
+                                <View style={[L.even,L.aiC,L.asC,L.mV10]}>
+                                <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>Book Auto </Text>
+                                <Image style={[HT(18), WT(25)]} source={Images.auto_marker ?? ""} />
+                                </View>
+                            </View>
+                            <View style={[L.even,L.aiC,L.jcSB]}>
+                                <TouchableOpacity onPress={() => { setShowModal(false) }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
+                                    <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>Not Now</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
+                                 onPress={() => {
+                                     setShowModal(false)
+                                     onItemPress(itemData)
+                                 }}>
+                                    <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Book Now</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            } 
         </View>
     );
 }
