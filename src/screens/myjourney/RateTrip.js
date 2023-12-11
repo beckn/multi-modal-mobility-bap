@@ -109,12 +109,24 @@ function RateTrip({ navigation, route }) {
     }
     function onItemPress(params) {
         try {
-            if (params.checked) {
-                params.checked = false
+            let updatedListData;
+            if (params.label === STR.strings.none_of_the_above) {
+                updatedListData = listData.map(item =>
+                    item.label === STR.strings.none_of_the_above
+                        ? { ...item, checked: !params.checked }
+                        : { ...item, checked: false }
+                );
             } else {
-                params.checked = true
+                updatedListData = listData.map(item =>
+                    item.label === STR.strings.none_of_the_above
+                        ? { ...item, checked: false }
+                        : item.id === params.id
+                        ? { ...item, checked: !params.checked }
+                        : item
+                );
             }
-            set_checked(!is_checked)
+    
+            set_listData(updatedListData);
         } catch (error) {
             console.log(error);
         }
