@@ -371,6 +371,7 @@ function YourJourney({ navigation, route }) {
         try {
             let status = false
             const type = rideDetails?.type ?? null
+            const routeType = rideDetails?.routeType ?? null
             const bus_status = rideDetails?.status ?? null
             if (type === "BUS") {
                 if (bus_status === "CONFIRMED") {
@@ -379,6 +380,9 @@ function YourJourney({ navigation, route }) {
                 if (bus_status === "IN_PROGRESS") {
                     status = true
                 }
+            } 
+            if (type === "AUTO" && routeType === "MULTI" && bus_status === "COMPLETED" ) {
+                    status = true
             }
             return status
         } catch (error) {
