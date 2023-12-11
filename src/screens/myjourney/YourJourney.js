@@ -40,23 +40,33 @@ function YourJourney({ navigation, route }) {
     const [rideDetails, setRideDetails] = useState({});
     const [currentRideId, setCurrentRideId] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [distance, setDistance] = useState();
-    const [itemData, setItemData] = useState();
     const [showBusRideModal, setShowBusRideModal] = useState(false);
 
     const startLocation = {
-        latitude: 37.7749, // Replace with your desired start latitude
-        longitude: -122.4194, // Replace with your desired start longitude
+        latitude: 37.7749,
+        longitude: -122.4194,
       };
       const endLocation = {
-        latitude: 37.7751, // Replace with your desired end latitude
-        longitude: -122.4194, // Replace with your desired end longitude
+        latitude: 37.7751,
+        longitude: -122.4194, 
+      };
+      const startLocationOfAuto = {
+        latitude: -0.2295,
+        longitude: -78.5243,
+      };
+      const endLocationofAuto = {
+        latitude: -0.2300,
+        longitude: -78.5063, 
       };
     const distanceInKM = 0.02223898532885992;
 
     useEffect(()=>{
         busRideJourneyPopup();
-    },[])
+    },[rideDetails?.status])
+
+    useEffect(()=>{
+        autoJourneyPopup();
+    },[rideDetails?.status])
 
     useFocusEffect(
         React.useCallback(() => {
@@ -82,11 +92,6 @@ function YourJourney({ navigation, route }) {
         setJourneyData()
     }, [completed_trips]);
 
-    useEffect(()=>{
-        if(distance == 2 && !showModal && itemData?.status !== "COMPLETED"){
-            setShowModal(true)
-        }
-    },[vehicleData])
 
     function setJourneyData() {
         try {
@@ -229,18 +234,6 @@ function YourJourney({ navigation, route }) {
             showPrice = true
         } else if (item.status === "FAILED") {
             sub_title = "Ride failed"
-        }
-        if(item.type == "AUTO"){
-            const startLocation = {};
-            const endLocation = {};
-            const endGps = item?.fulfillment?.end?.location?.gps?.split(",");
-            endLocation.latitude = endGps[0]
-            endLocation.longitude = endGps[1]
-            const startGps = item?.fulfillment?.start?.location?.gps?.split(",");
-            startLocation.latitude = startGps[0]
-            startLocation.longitude = startGps[1]
-            setDistance(getDistance(startLocation,endLocation))
-            setItemData(item);
         }
         return (
             <>
@@ -410,15 +403,23 @@ function YourJourney({ navigation, route }) {
     function busRideJourneyPopup(){
         const type = rideDetails?.type ?? null
         const routeType = rideDetails?.routeType ?? null
-        const bus_status = rideDetails?.status ?? null
+        const status = rideDetails?.status ?? null
         const d = getDistance(startLocation,endLocation)
        
         if(routeType == "MULTI" || type == "BUS") {
-            if(((type === "AUTO" && bus_status === "COMPLETED") || (type === "BUS" && bus_status !== "COMPLETED")) && d == distanceInKM){
+            if(((type === "AUTO" && status === "COMPLETED") || (type === "BUS" && status !== "COMPLETED")) && d == distanceInKM){
                 setShowBusRideModal(true);
             } else {
                 setShowBusRideModal(false);
             }
+        }
+    }
+    function autoJourneyPopup(){
+        const type = rideDetails?.type ?? null
+        const status = rideDetails?.status ?? null
+        const d = getDistance(startLocationOfAuto,endLocationofAuto)
+        if(d == parseFloat(d.toFixed(2)) && !showModal && status !== "COMPLETED" && type === "AUTO"){
+            setShowModal(true)
         }
     }
     return (
@@ -536,7 +537,6 @@ function YourJourney({ navigation, route }) {
                     </View>
                     </View>
                 </Modal>
-
             } 
         </View>
     );
