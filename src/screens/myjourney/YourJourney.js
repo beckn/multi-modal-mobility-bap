@@ -54,19 +54,16 @@ function YourJourney({ navigation, route }) {
         latitude: -0.2295,
         longitude: -78.5243,
       };
-      const endLocationofAuto = {
+      const endLocationOfAuto = {
         latitude: -0.2300,
         longitude: -78.5063, 
       };
     const distanceInKM = 0.02223898532885992;
 
     useEffect(()=>{
-        busRideJourneyPopup();
-    },[rideDetails?.status])
-
-    useEffect(()=>{
         autoJourneyPopup();
-    },[rideDetails?.status])
+        busRideJourneyPopup();
+    },[completed_trips])
 
     useFocusEffect(
         React.useCallback(() => {
@@ -392,6 +389,8 @@ function YourJourney({ navigation, route }) {
             if(routeType == "MULTI") {
                 if((type === "AUTO" && bus_status === "COMPLETED") || (type === "BUS" && bus_status !== "COMPLETED")){
                     status = true
+                } else {
+                    status= false;
                 }
             }
             return status
@@ -417,8 +416,8 @@ function YourJourney({ navigation, route }) {
     function autoJourneyPopup(){
         const type = rideDetails?.type ?? null
         const status = rideDetails?.status ?? null
-        const d = getDistance(startLocationOfAuto,endLocationofAuto)
-        if(d == parseFloat(d.toFixed(2)) && !showModal && status !== "COMPLETED" && type === "AUTO"){
+        const d = getDistance(startLocationOfAuto,endLocationOfAuto)
+        if(d == parseFloat(d.toFixed(2)) && status !== "COMPLETED" && type === "AUTO"){
             setShowModal(true)
         }
     }
@@ -464,7 +463,6 @@ function YourJourney({ navigation, route }) {
                     </View>
                 </Modal>
             }
-            {showModal && 
                 <Modal
                     transparent={true}
                     supportedOrientations={['portrait', 'landscape']}
@@ -503,8 +501,6 @@ function YourJourney({ navigation, route }) {
                         </View>
                     </View>
                 </Modal>
-            }
-            {showBusRideModal &&
                 <Modal
                 transparent={true}
                 supportedOrientations={['portrait', 'landscape']}
@@ -537,7 +533,6 @@ function YourJourney({ navigation, route }) {
                     </View>
                     </View>
                 </Modal>
-            } 
         </View>
     );
 }
