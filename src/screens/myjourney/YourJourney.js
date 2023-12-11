@@ -40,8 +40,30 @@ function YourJourney({ navigation, route }) {
     const [rideDetails, setRideDetails] = useState({});
     const [currentRideId, setCurrentRideId] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [distance, setDistance] = useState();
-    const [itemData, setItemData] = useState();
+    const [showBusRideModal, setShowBusRideModal] = useState(false);
+
+    const startLocation = {
+        latitude: 37.7749,
+        longitude: -122.4194,
+      };
+      const endLocation = {
+        latitude: 37.7751,
+        longitude: -122.4194, 
+      };
+      const startLocationOfAuto = {
+        latitude: -0.2295,
+        longitude: -78.5243,
+      };
+      const endLocationOfAuto = {
+        latitude: -0.2300,
+        longitude: -78.5063, 
+      };
+    const distanceInKM = 0.02223898532885992;
+
+    useEffect(()=>{
+        autoJourneyPopup();
+        busRideJourneyPopup();
+    },[completed_trips])
 
     useFocusEffect(
         React.useCallback(() => {
@@ -67,11 +89,6 @@ function YourJourney({ navigation, route }) {
         setJourneyData()
     }, [completed_trips]);
 
-    useEffect(()=>{
-        if(distance == 2 && !showModal && itemData?.status !== "COMPLETED"){
-            setShowModal(true)
-        }
-    },[vehicleData])
 
     function setJourneyData() {
         try {
@@ -214,18 +231,6 @@ function YourJourney({ navigation, route }) {
             showPrice = true
         } else if (item.status === "FAILED") {
             sub_title = "Ride failed"
-        }
-        if(item.type == "AUTO"){
-            const startLocation = {};
-            const endLocation = {};
-            const endGps = item?.fulfillment?.end?.location?.gps?.split(",");
-            endLocation.latitude = endGps[0]
-            endLocation.longitude = endGps[1]
-            const startGps = item?.fulfillment?.start?.location?.gps?.split(",");
-            startLocation.latitude = startGps[0]
-            startLocation.longitude = startGps[1]
-            setDistance(getDistance(startLocation,endLocation))
-            setItemData(item);
         }
         return (
             <>
@@ -381,13 +386,40 @@ function YourJourney({ navigation, route }) {
                     status = true
                 }
             } 
-            if (type === "AUTO" && routeType === "MULTI" && bus_status === "COMPLETED" ) {
+            if(routeType == "MULTI") {
+                if((type === "AUTO" && bus_status === "COMPLETED") || (type === "BUS" && bus_status !== "COMPLETED")){
                     status = true
+                } else {
+                    status= false;
+                }
             }
             return status
         } catch (error) {
             console.log(error);
             return false
+        }
+    }
+    function busRideJourneyPopup(){
+        const type = rideDetails?.type ?? null
+        const routeType = rideDetails?.routeType ?? null
+        const status = rideDetails?.status ?? null
+        const d = getDistance(startLocation,endLocation)
+       
+        if(routeType == "MULTI" || type == "BUS") {
+            if(((type === "AUTO" && status === "COMPLETED") || (type === "BUS" && status !== "COMPLETED")) && d == distanceInKM){
+                setShowBusRideModal(true);
+            } else {
+                setShowBusRideModal(false);
+            }
+        }
+    }
+    function autoJourneyPopup(){
+        const type = rideDetails?.type ?? null
+        const status = rideDetails?.status ?? null
+        const d = getDistance(startLocationOfAuto,endLocationOfAuto)
+        const distance =  parseFloat(d.toFixed(2))
+        if(distance == 2 && status !== "COMPLETED" && type === "AUTO"){
+            setShowModal(true)
         }
     }
     return (
@@ -432,7 +464,6 @@ function YourJourney({ navigation, route }) {
                     </View>
                 </Modal>
             }
-            {showModal && 
                 <Modal
                     transparent={true}
                     supportedOrientations={['portrait', 'landscape']}
@@ -471,7 +502,38 @@ function YourJourney({ navigation, route }) {
                         </View>
                     </View>
                 </Modal>
-            } 
+                <Modal
+                transparent={true}
+                supportedOrientations={['portrait', 'landscape']}
+                visible={showBusRideModal}
+                animationType='fade'
+                onRequestClose={() => setShowBusRideModal(false)}>
+                    <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
+                    <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
+                        <View style={[C.bgWhite,L.p10]}>
+                            <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowBusRideModal(false)}>
+                                <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
+                            </TouchableOpacity>
+                                <View style={[L.even,L.aiC,L.asC,L.mV10]}>
+                                <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>{journeyLabel() }</Text>
+                                <Image style={[HT(18), WT(25)]} source={Images.bus_marker ?? ""} />
+                                </View>
+                            <View style={[L.even,L.aiC,L.jcSB,L.mT10]}>
+                                <TouchableOpacity onPress={() => { setShowBusRideModal(false); }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
+                                    <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>No</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
+                                 onPress={() => {
+                                    setShowBusRideModal(false);
+                                    onSubmit(quantity + 1)
+                                 }}>
+                                    <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                    </View>
+                </Modal>
         </View>
     );
 }
