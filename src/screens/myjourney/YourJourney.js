@@ -417,7 +417,8 @@ function YourJourney({ navigation, route }) {
         const type = rideDetails?.type ?? null
         const status = rideDetails?.status ?? null
         const d = getDistance(startLocationOfAuto,endLocationOfAuto)
-        if(d == parseFloat(d.toFixed(2)) && status !== "COMPLETED" && type === "AUTO"){
+        const distance =  parseFloat(d.toFixed(2))
+        if(distance == 2 && status !== "COMPLETED" && type === "AUTO"){
             setShowModal(true)
         }
     }
