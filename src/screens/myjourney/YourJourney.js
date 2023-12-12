@@ -60,11 +60,7 @@ function YourJourney({ navigation, route }) {
       };
     const distanceInKM = 0.02223898532885992;
 
-    useEffect(()=>{
-        autoJourneyPopup();
-        busRideJourneyPopup();
-    },[completed_trips])
-
+     
     useFocusEffect(
         React.useCallback(() => {
             set_modalConfirm(false);
@@ -89,6 +85,9 @@ function YourJourney({ navigation, route }) {
         setJourneyData()
     }, [completed_trips]);
 
+    useEffect(() => {
+        busRideJourneyPopup();
+    }, [rideDetails]);
 
     function setJourneyData() {
         try {
@@ -170,8 +169,12 @@ function YourJourney({ navigation, route }) {
             if (item.type === "AUTO") {
                 if (item.status != "SELECTED") {
                     if (item.status === "COMPLETED") {
+                        setShowModal(false);
+                        setShowBusRideModal(false);
                         RootNavigation.navigate("RideCompleted", { itemData: item })
                     } else {
+                        setShowModal(false);
+                        setShowBusRideModal(false);
                         RootNavigation.navigate("ConfirmedRide", { itemData: item })
                     }
                 } else {
@@ -371,12 +374,11 @@ function YourJourney({ navigation, route }) {
             return "Has your ride started?"
         }
     }
-
+    
     function busBtn() {
         try {
             let status = false
             const type = rideDetails?.type ?? null
-            const routeType = rideDetails?.routeType ?? null
             const bus_status = rideDetails?.status ?? null
             if (type === "BUS") {
                 if (bus_status === "CONFIRMED") {
@@ -386,13 +388,17 @@ function YourJourney({ navigation, route }) {
                     status = true
                 }
             } 
-            if(routeType == "MULTI") {
-                if((type === "AUTO" && bus_status === "COMPLETED") || (type === "BUS" && bus_status !== "COMPLETED")){
+            if (type === "AUTO") {
+                if (bus_status === "CONFIRMED") {
                     status = true
-                } else {
-                    status= false;
                 }
-            }
+                if (bus_status === "IN_PROGRESS") {
+                    status = true
+                }
+                if (bus_status === "COMPLETED") {
+                    status = true
+                }
+            } 
             return status
         } catch (error) {
             console.log(error);
@@ -401,24 +407,30 @@ function YourJourney({ navigation, route }) {
     }
     function busRideJourneyPopup(){
         const type = rideDetails?.type ?? null
-        const routeType = rideDetails?.routeType ?? null
         const status = rideDetails?.status ?? null
         const d = getDistance(startLocation,endLocation)
-       
-        if(routeType == "MULTI" || type == "BUS") {
-            if(((type === "AUTO" && status === "COMPLETED") || (type === "BUS" && status !== "COMPLETED")) && d == distanceInKM){
+        if(type == "BUS") {
+            if(status == "CONFIRMED" && d == distanceInKM){
                 setShowBusRideModal(true);
+            } else if(status == "IN_PROGRESS" && d == distanceInKM ) {
+                setShowBusRideModal(true);
+                autoJourneyPopup();
             } else {
                 setShowBusRideModal(false);
             }
         }
+        if(type == "AUTO"){
+            if(status == "COMPLETED"){
+                setShowBusRideModal(true)
+            } else {
+                setShowBusRideModal(false)
+            }
+        }
     }
     function autoJourneyPopup(){
-        const type = rideDetails?.type ?? null
-        const status = rideDetails?.status ?? null
         const d = getDistance(startLocationOfAuto,endLocationOfAuto)
         const distance =  parseFloat(d.toFixed(2))
-        if(distance == 2 && status !== "COMPLETED" && type === "AUTO"){
+        if(distance == 2){
             setShowModal(true)
         }
     }
@@ -464,76 +476,76 @@ function YourJourney({ navigation, route }) {
                     </View>
                 </Modal>
             }
-                <Modal
-                    transparent={true}
-                    supportedOrientations={['portrait', 'landscape']}
-                    visible={showModal}
-                    animationType='fade'
-                    onRequestClose={() => setShowModal(false)}>
-                    <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
-                        <View style={[C.bgWhite,L.p10]}>
-                            <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowModal(false)}>
-                                <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
-                            </TouchableOpacity>
-                        <View style={[HT(15)]} />
-                            <View style={[L.p20]} >
-                                <View style={[L.even,L.aiC,L.asC]}>
-                                <Image style={[HT(18), WT(20),L.asC]} source={Images.bus_Stop ?? ""} />
-                                <Text style={[L.asC , C.fcGrey]} >Just 5 mins away from bus stop!</Text>
-                                </View>
-                                <Text style={[L.asC,C.fcLightGrey]}>We are almost there. Shall we book your auto ride now.</Text>
-                                <View style={[L.even,L.aiC,L.asC,L.mV10]}>
-                                <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>Book Auto </Text>
-                                <Image style={[HT(18), WT(25)]} source={Images.auto_marker ?? ""} />
-                                </View>
-                            </View>
-                            <View style={[L.even,L.aiC,L.jcSB]}>
-                                <TouchableOpacity onPress={() => { setShowModal(false) }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
-                                    <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>Not Now</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
-                                 onPress={() => {
-                                     setShowModal(false)
-                                     onItemPress(itemData)
-                                 }}>
-                                    <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Book Now</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
-                <Modal
+            <Modal
                 transparent={true}
                 supportedOrientations={['portrait', 'landscape']}
-                visible={showBusRideModal}
+                visible={showModal}
                 animationType='fade'
-                onRequestClose={() => setShowBusRideModal(false)}>
-                    <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
-                    <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
-                        <View style={[C.bgWhite,L.p10]}>
-                            <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowBusRideModal(false)}>
-                                <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
-                            </TouchableOpacity>
-                                <View style={[L.even,L.aiC,L.asC,L.mV10]}>
-                                <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>{journeyLabel() }</Text>
-                                <Image style={[HT(18), WT(25)]} source={Images.bus_marker ?? ""} />
-                                </View>
-                            <View style={[L.even,L.aiC,L.jcSB,L.mT10]}>
-                                <TouchableOpacity onPress={() => { setShowBusRideModal(false); }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
-                                    <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>No</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
-                                 onPress={() => {
-                                    setShowBusRideModal(false);
-                                    onSubmit(quantity + 1)
-                                 }}>
-                                    <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
-                                </TouchableOpacity>
+                onRequestClose={() => setShowModal(false)}>
+                <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
+                    <View style={[C.bgWhite,L.p10]}>
+                        <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowModal(false)}>
+                            <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
+                        </TouchableOpacity>
+                    <View style={[HT(15)]} />
+                        <View style={[L.p20]} >
+                            <View style={[L.even,L.aiC,L.asC]}>
+                            <Image style={[HT(18), WT(20),L.asC]} source={Images.bus_Stop ?? ""} />
+                            <Text style={[L.asC , C.fcGrey]} >Just 5 mins away from bus stop!</Text>
+                            </View>
+                            <Text style={[L.asC,C.fcLightGrey]}>We are almost there. Shall we book your auto ride now.</Text>
+                            <View style={[L.even,L.aiC,L.asC,L.mV10]}>
+                            <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>Book Auto </Text>
+                            <Image style={[HT(18), WT(25)]} source={Images.auto_marker ?? ""} />
                             </View>
                         </View>
+                        <View style={[L.even,L.aiC,L.jcSB]}>
+                            <TouchableOpacity onPress={() => { setShowModal(false) }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
+                                <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>Not Now</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
+                             onPress={() => {
+                                 setShowModal(false)
+                                 onItemPress(itemData)
+                             }}>
+                                <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Book Now</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
+                </View>
+            </Modal>
+            <Modal
+            transparent={true}
+            supportedOrientations={['portrait', 'landscape']}
+            visible={showBusRideModal}
+            animationType='fade'
+            onRequestClose={() => setShowBusRideModal(false)}>
+                <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
+                <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
+                    <View style={[C.bgWhite,L.p10]}>
+                        <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowBusRideModal(false)}>
+                            <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
+                        </TouchableOpacity>
+                            <View style={[L.even,L.aiC,L.asC,L.mV10]}>
+                            <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>{journeyLabel() }</Text>
+                            <Image style={[HT(18), WT(25)]} source={Images.bus_marker ?? ""} />
+                            </View>
+                        <View style={[L.even,L.aiC,L.jcSB,L.mT10]}>
+                            <TouchableOpacity onPress={() => { setShowBusRideModal(false); }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
+                                <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>No</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
+                             onPress={() => {
+                                setShowBusRideModal(false);
+                                onSubmit(quantity + 1)
+                             }}>
+                                <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </Modal>
+                </View>
+                </View>
+            </Modal>
         </View>
     );
 }
