@@ -123,6 +123,9 @@ function AvailableOptions({ navigation, route }) {
                     }
                     const tmpTime2 = hasValue(select_route[i - 1]?.duration ?? "") ? parseInt(select_route[i - 1].duration) : 0
                     let eta2 = select_route[i - 1]?.endTime ?? moment().add(tmpTime2, 'minutes').format('hh:mm A')
+                    if (element.type === "AUTO" && select_route[i - 1]?.type === "BUS") {
+                        etd = moment(eta2, 'hh:mm A').add(2, 'minutes').format('hh:mm A');
+                    }                    
                     let walk_eta3 = ""
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
                         const tmpTime_durationFromStartPoint = hasValue(element.durationFromStartPoint) ? parseInt(element.durationFromStartPoint) : 0
@@ -170,6 +173,8 @@ function AvailableOptions({ navigation, route }) {
                             const tmpTime_durationToEndPoint = hasValue(element.durationToEndPoint) ? parseInt(element.durationToEndPoint) : 0
                             end_eta = moment(dateTime(eta, "hh:mm A", "")).add(tmpTime_durationToEndPoint, 'minutes').format('hh:mm A')
                         }
+                        const time_duration = hasValue(element.duration) ? parseInt(element.duration) : 0
+                        const etaForAuto = moment(etd, 'hh:mm A').add(time_duration, 'minutes').format('hh:mm A');
                         let tmpJasonEnd = {
                             address: hasValue(element?.distanceToEndPoint ?? "") ? element?.endPointAddress ?? "" : element?.end?.address?.ward ?? element?.end?.name ?? "",
                             vehicle: {
@@ -180,7 +185,7 @@ function AvailableOptions({ navigation, route }) {
                             distance: element?.distance ?? "",
                             duration: element?.duration ?? "",
                             status: "",
-                            eta: end_eta,
+                            eta: element?.type == "AUTO" ? etaForAuto : end_eta,
                             walkingDistanceFromEndPoint: element?.distanceToEndPoint ?? "",
                             walkingDurationFromEndPoint: element?.durationToEndPoint ?? "",
                             icon: element?.type === "AUTO" ? Images.auto : Images.bus_full,
