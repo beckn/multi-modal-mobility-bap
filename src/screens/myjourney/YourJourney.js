@@ -379,6 +379,7 @@ function YourJourney({ navigation, route }) {
         try {
             let status = false
             const type = rideDetails?.type ?? null
+            const routeType = rideDetails?.routeType ?? null
             const bus_status = rideDetails?.status ?? null
             if (type === "BUS") {
                 if (bus_status === "CONFIRMED") {
@@ -388,7 +389,7 @@ function YourJourney({ navigation, route }) {
                     status = true
                 }
             } 
-            if (type === "AUTO") {
+            if (type === "AUTO" && routeType == "MULTI") {
                 if (bus_status === "CONFIRMED") {
                     status = true
                 }
@@ -408,6 +409,7 @@ function YourJourney({ navigation, route }) {
     function busRideJourneyPopup(){
         const type = rideDetails?.type ?? null
         const status = rideDetails?.status ?? null
+        const routeType = rideDetails?.routeType ?? null
         const d = getDistance(startLocation,endLocation)
         if(type == "BUS") {
             if(status == "CONFIRMED" && d == distanceInKM){
@@ -419,7 +421,7 @@ function YourJourney({ navigation, route }) {
                 setShowBusRideModal(false);
             }
         }
-        if(type == "AUTO"){
+        if(type == "AUTO" && routeType == "MULTI" ){
             if(status == "COMPLETED"){
                 setShowBusRideModal(true)
             } else {
