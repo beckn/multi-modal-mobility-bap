@@ -41,6 +41,7 @@ function YourJourney({ navigation, route }) {
     const [currentRideId, setCurrentRideId] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [showBusRideModal, setShowBusRideModal] = useState(false);
+    const [itemData, setItemData] = useState(false);
 
     const startLocation = {
         latitude: 37.7749,
@@ -164,9 +165,9 @@ function YourJourney({ navigation, route }) {
             console.log(error);
         }
     }
-    function onItemPress(item) {
+    function onItemPress(item , isBookAuto) {
         try {
-            if (item.type === "AUTO") {
+            if (item.type === "AUTO" && isBookAuto) {
                 if (item.status != "SELECTED") {
                     if (item.status === "COMPLETED") {
                         setShowModal(false);
@@ -235,6 +236,9 @@ function YourJourney({ navigation, route }) {
         } else if (item.status === "FAILED") {
             sub_title = "Ride failed"
         }
+        if(item.type == "AUTO"){
+            setItemData(item)
+        }
         return (
             <>
                 {currentRideId === item.id &&
@@ -285,7 +289,7 @@ function YourJourney({ navigation, route }) {
                     </View>
                 }
                 <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
-                    onPress={() => { onItemPress(item) }}>
+                    onPress={() => { onItemPress(item,false) }}>
                     <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
                         <View style={[WT('50%'), L.even, L.aiC]}>
                             <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
@@ -409,7 +413,6 @@ function YourJourney({ navigation, route }) {
     function busRideJourneyPopup(){
         const type = rideDetails?.type ?? null
         const status = rideDetails?.status ?? null
-        const routeType = rideDetails?.routeType ?? null
         const d = getDistance(startLocation,endLocation)
         if(type == "BUS") {
             if(status == "CONFIRMED" && d == distanceInKM){
@@ -419,13 +422,6 @@ function YourJourney({ navigation, route }) {
                 autoJourneyPopup();
             } else {
                 setShowBusRideModal(false);
-            }
-        }
-        if(type == "AUTO" && routeType == "MULTI" ){
-            if(status == "COMPLETED"){
-                setShowBusRideModal(true)
-            } else {
-                setShowBusRideModal(false)
             }
         }
     }
@@ -508,7 +504,7 @@ function YourJourney({ navigation, route }) {
                             <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
                              onPress={() => {
                                  setShowModal(false)
-                                 onItemPress(itemData)
+                                 onItemPress(itemData , true)
                              }}>
                                 <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Book Now</Text>
                             </TouchableOpacity>
