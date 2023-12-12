@@ -289,7 +289,7 @@ function YourJourney({ navigation, route }) {
                     </View>
                 }
                 <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
-                    onPress={() => { onItemPress(item,false) }}>
+                    onPress={() => { onItemPress(item, item.type == "AUTO" && item.status == "COMPLETED") }}>
                     <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
                         <View style={[WT('50%'), L.even, L.aiC]}>
                             <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
