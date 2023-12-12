@@ -39,7 +39,7 @@ function MyJourney({ navigation, route }) {
         }
     }, [history]);
 
-    function onItemPress(item, type, rideTo) {
+    function onItemPress(item, type, rideTo, rideFrom) {
         try {
             const startLocation = item?.start?.gps ?? ""
             const endLocation = item?.end?.gps ?? ""
@@ -71,7 +71,7 @@ function MyJourney({ navigation, route }) {
                     "type": type
                 },
                 "itemData": {
-                    source_location: rideTo,
+                    source_location: rideFrom,
                     destination_location: rideTo,
                 }
             }))
@@ -225,8 +225,10 @@ function MyJourney({ navigation, route }) {
             itemData = item.details
         }
         let rideTo = ""
+        let rideFrom = ""
         if (hasValue(tmp_track) && tmp_track.length > 0) {
             rideTo = tmp_track[tmp_track.length - 1].end?.address?.ward ?? ""
+            rideFrom = tmp_track[tmp_track.length - 1].start?.address?.ward ?? ""
         }
 
         let select_route = {}
@@ -376,7 +378,7 @@ function MyJourney({ navigation, route }) {
                     }
                     <View style={[HT(15)]} />
                     <View style={[HT(3), WT("100%"), C.bgLGray]} />
-                    <TouchableOpacity style={[WT(100), HT(35), L.asC, L.jcC, L.aiC, L.mT2]} onPress={() => { onItemPress(itemData, item?.type ?? "MULTI", rideTo) }}>
+                    <TouchableOpacity style={[WT(100), HT(35), L.asC, L.jcC, L.aiC, L.mT2]} onPress={() => { onItemPress(itemData, item?.type ?? "MULTI", rideTo, rideFrom) }}>
                         <Text style={[C.fcBlue, F.ffB, F.fsOne7, L.taC]}>Rebook</Text>
                     </TouchableOpacity>
                 </View>}
