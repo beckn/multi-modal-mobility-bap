@@ -36,12 +36,13 @@ function YourJourney({ navigation, route }) {
     const [vehicleData, set_vehicleData] = useState([]);
     const [headerLabel, setHeaderLabel] = useState("Your Journey");
     const [quantity, set_quantity] = useState(0);
-    const [modalConfirm, set_modalConfirm] = useState(false);
     const [rideDetails, setRideDetails] = useState({});
     const [currentRideId, setCurrentRideId] = useState(null);
+    const [itemData, setItemData] = useState(false);
+    const [busRideView, setBusRideView] = useState("no")
     const [showModal, setShowModal] = useState(false);
     const [showBusRideModal, setShowBusRideModal] = useState(false);
-    const [itemData, setItemData] = useState(false);
+    const [modalConfirm, set_modalConfirm] = useState(false);
 
     const startLocation = {
         latitude: 37.7749,
@@ -89,6 +90,12 @@ function YourJourney({ navigation, route }) {
     useEffect(() => {
         busRideJourneyPopup();
     }, [rideDetails]);
+
+    useEffect(() => {
+        if (responseDataMaster.isLoading == true) {
+            setShowBusRideModal(false)
+        }
+    }, [responseDataMaster.isLoading])
 
     function setJourneyData() {
         try {
@@ -183,6 +190,8 @@ function YourJourney({ navigation, route }) {
                         set_modalConfirm(true)
                         dispatch(confirmRide({}))
                     } else {
+                        setShowBusRideModal(false)
+                        setShowModal(false)
                         RootNavigation.replace("RateTrip")
                     }
                 }
@@ -239,6 +248,15 @@ function YourJourney({ navigation, route }) {
         if(item.type == "AUTO"){
             setItemData(item)
         }
+       
+        let status = false;
+        completed_trips?.map((i) => {
+            if(i?.type == "BUS" && i?.status !== "CONFIRMED"){
+                status = true
+            } else if(i?.type == "AUTO" && i?.status != "SELECTED"){
+                status = true
+            }
+        })
         return (
             <>
                 {currentRideId === item.id &&
@@ -289,7 +307,7 @@ function YourJourney({ navigation, route }) {
                     </View>
                 }
                 <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
-                    onPress={() => { onItemPress(item, item.type == "AUTO" && item.status == "COMPLETED") }}>
+                    onPress={() => { onItemPress(item, status) }}>
                     <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
                         <View style={[WT('50%'), L.even, L.aiC]}>
                             <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
@@ -357,6 +375,8 @@ function YourJourney({ navigation, route }) {
                 // set_modalConfirm(true)
                 // dispatch(confirmRide({}))
             } else {
+                setShowBusRideModal(false)
+                setShowModal(false)
                 RootNavigation.replace("RateTrip")
             }
         } catch (error) {
@@ -382,48 +402,44 @@ function YourJourney({ navigation, route }) {
     function busBtn() {
         try {
             let status = false
-            const type = rideDetails?.type ?? null
-            const routeType = rideDetails?.routeType ?? null
-            const bus_status = rideDetails?.status ?? null
-            if (type === "BUS") {
-                if (bus_status === "CONFIRMED") {
+            // const type = rideDetails?.type ?? null
+            // const bus_status = rideDetails?.status ?? null
+            // if (type === "BUS") {
+            //     if (bus_status === "CONFIRMED") {
+            //         status = true
+            //     }
+            //     if (bus_status === "IN_PROGRESS") {
+            //         status = true
+            //     }
+            // }
+            completed_trips?.map((i) => {
+                if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS")){
                     status = true
-                }
-                if (bus_status === "IN_PROGRESS") {
-                    status = true
-                }
-            } 
-            if (type === "AUTO" && routeType == "MULTI") {
-                if (bus_status === "CONFIRMED") {
-                    status = true
-                }
-                if (bus_status === "IN_PROGRESS") {
-                    status = true
-                }
-                if (bus_status === "COMPLETED") {
-                    status = true
-                }
-            } 
-            return status
+                } 
+            })
+             return status
         } catch (error) {
             console.log(error);
             return false
         }
     }
     function busRideJourneyPopup(){
-        const type = rideDetails?.type ?? null
-        const status = rideDetails?.status ?? null
         const d = getDistance(startLocation,endLocation)
-        if(type == "BUS") {
-            if(status == "CONFIRMED" && d == distanceInKM){
+            completed_trips?.map((i) => {
+                if(i?.type == "BUS" && i?.status == "CONFIRMED" && d == distanceInKM){
+                    setBusRideView("pending")
+                    setShowBusRideModal(true);
+            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && d == distanceInKM){
+                setBusRideView("pending")
                 setShowBusRideModal(true);
-            } else if(status == "IN_PROGRESS" && d == distanceInKM ) {
-                setShowBusRideModal(true);
-                autoJourneyPopup();
-            } else {
-                setShowBusRideModal(false);
-            }
-        }
+                const autoData = completed_trips?.find((i)=>i?.type == "AUTO")
+                if(autoData?.type == "AUTO" && autoData?.status == "SELECTED"){
+                    autoJourneyPopup();
+                } else {
+                    setShowModal(false)
+                }
+            } 
+        })
     }
     function autoJourneyPopup(){
         const d = getDistance(startLocationOfAuto,endLocationOfAuto)
@@ -448,11 +464,11 @@ function YourJourney({ navigation, route }) {
                 </View>
                 <View style={[HT(100)]} />
             </ScrollView>
-            {busBtn() &&
+            {busBtn() && busRideView == "no" &&
                 <View style={[C.bgWhite, L.card, C.brLight, L.br05, L.aiC, L.jcC, HT(150), L.dpARL, { bottom: 0 }]}>
                     <Text style={[C.fcBlack, F.ffM, L.taC, F.fsOne5]}>{journeyLabel()}</Text>
                     <View style={[HT(25)]} />
-                    <Button onPress={() => { onSubmit(quantity + 1) }} style={[WT('90%'), HT(45)]} label={"Yes"} />
+                    <Button onPress={() => {onSubmit(quantity + 1); setBusRideView('pending') }} style={[WT('90%'), HT(45)]} label={"Yes"} />
                 </View>
             }
             {responseDataMaster.isLoading == true &&
@@ -461,7 +477,7 @@ function YourJourney({ navigation, route }) {
                     supportedOrientations={['portrait', 'landscape']}
                     visible={modalConfirm}
                     animationType='fade'
-                    onRequestClose={() => set_modalConfirm(false)}>
+                    onRequestClose={() => {setShowBusRideModal(false); set_modalConfirm(false)}}>
                     <View style={[WT('100%'), HT('100%'), C.bgTPH, L.jcC, L.aiC]}>
                         <View style={[WT('100%'), HT('100%'), C.bgTPH, L.aiC]}>
                             <View style={[HT(Platform.OS == 'ios' ? '5%' : '0%'), WT('100%')]} />
@@ -474,6 +490,41 @@ function YourJourney({ navigation, route }) {
                     </View>
                 </Modal>
             }
+            <Modal
+            transparent={true}
+            supportedOrientations={['portrait', 'landscape']}
+            visible={showBusRideModal}
+            animationType='fade'
+            onRequestClose={() => setShowBusRideModal(false)}>
+                <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
+                <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
+                    <View style={[C.bgWhite,L.p10]}>
+                        <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => {setBusRideView("no");setShowBusRideModal(false)}}>
+                            <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
+                        </TouchableOpacity>
+                            <View style={[L.even,L.aiC,L.asC,L.mV10]}>
+                            <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>{journeyLabel() }</Text>
+                            <Image style={[HT(18), WT(25)]} source={Images.bus_marker ?? ""} />
+                            </View>
+                        <View style={[L.even,L.aiC,L.jcSB,L.mT10]}>
+                            <TouchableOpacity onPress={() => { 
+                               setShowBusRideModal(false)
+                               setBusRideView("no")
+                            }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
+                                <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>No</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
+                             onPress={() => {
+                                setShowBusRideModal(false);
+                                onSubmit(quantity + 1)
+                             }}>
+                                <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+                </View>
+            </Modal>
             <Modal
                 transparent={true}
                 supportedOrientations={['portrait', 'landscape']}
@@ -510,38 +561,6 @@ function YourJourney({ navigation, route }) {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </View>
-            </Modal>
-            <Modal
-            transparent={true}
-            supportedOrientations={['portrait', 'landscape']}
-            visible={showBusRideModal}
-            animationType='fade'
-            onRequestClose={() => setShowBusRideModal(false)}>
-                <View style={[WT('100%'), HT('100%'), C.bgTPL, L.jcC]}>
-                <View style={[L.asC, L.jcC, C.bgTransparent, L.abs, L.f1, L.pV10,L.mB30]}>
-                    <View style={[C.bgWhite,L.p10]}>
-                        <TouchableOpacity style={[HT(25), L.jcC, L.aiR]} onPress={() => setShowBusRideModal(false)}>
-                            <Icon style={[WT(25), HT(25)]} name="close" size={20} color={C.black} />
-                        </TouchableOpacity>
-                            <View style={[L.even,L.aiC,L.asC,L.mV10]}>
-                            <Text style={[L.asC ,C.fcDarkGrey, F.f75,F.fsTwo4]}>{journeyLabel() }</Text>
-                            <Image style={[HT(18), WT(25)]} source={Images.bus_marker ?? ""} />
-                            </View>
-                        <View style={[L.even,L.aiC,L.jcSB,L.mT10]}>
-                            <TouchableOpacity onPress={() => { setShowBusRideModal(false); }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
-                                <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>No</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
-                             onPress={() => {
-                                setShowBusRideModal(false);
-                                onSubmit(quantity + 1)
-                             }}>
-                                <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
                 </View>
             </Modal>
         </View>
