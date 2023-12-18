@@ -153,8 +153,8 @@ function RideCompleted({ navigation, route }) {
                             <Text style={[C.lColor, F.ffM, F.fsOne4]}>Duration <Text style={[F.ffB]}>{ride_updates?.details?.duration ?? ""}</Text></Text>
                         </View>
                         <View style={[L.aiR]}>
-                            <Text style={[C.lColor, F.ffM, F.fsOne4]}>Start time <Text style={[F.ffB]}>{dateTime(ride_updates?.details?.startTime ?? "", "hh:mm A")}</Text></Text>
-                            <Text style={[C.lColor, F.ffM, F.fsOne4]}>End time <Text style={[F.ffB]}>{dateTime(ride_updates?.details?.endTime ?? "", "hh:mm A")}</Text></Text>
+                            <Text style={[C.lColor, F.ffM, F.fsOne4]}>Start time <Text style={[F.ffB]}>{dateTime(ride_updates?.details?.startTime ?? "", null, "hh:mm A")}</Text></Text>
+                            <Text style={[C.lColor, F.ffM, F.fsOne4]}>End time <Text style={[F.ffB]}>{dateTime(ride_updates?.details?.endTime ?? "", null , "hh:mm A")}</Text></Text>
                         </View>
                     </View>
                     <View style={[HT(40)]} />
