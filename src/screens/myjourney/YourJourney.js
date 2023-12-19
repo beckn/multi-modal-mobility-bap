@@ -371,7 +371,7 @@ function YourJourney({ navigation, route }) {
     }
     function onBookRide() {
         try {
-            if (isCompletedTrip(0)) {
+            if (isCompletedTrip("isMulti")) {
                 // set_modalConfirm(true)
                 // dispatch(confirmRide({}))
             } else {
@@ -425,10 +425,10 @@ function YourJourney({ navigation, route }) {
     }
     function busRideJourneyPopup(){
         const d = getDistance(startLocation,endLocation)
-            completed_trips?.map((i) => {
-                if(i?.type == "BUS" && i?.status == "CONFIRMED" && d == distanceInKM){
-                    setBusRideView("pending")
-                    setShowBusRideModal(true);
+        completed_trips?.map((i) => {
+            if(i?.type == "BUS" && i?.status == "CONFIRMED" && d == distanceInKM){
+                setBusRideView("pending")
+                setShowBusRideModal(true);
             } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && d == distanceInKM){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
