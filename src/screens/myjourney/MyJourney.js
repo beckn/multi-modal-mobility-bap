@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
     View, Text, FlatList, ScrollView, Image
 } from 'react-native';
+import { API } from '../../shared/API-end-points';
 import { Images } from '../../commonStyles/Images'
 import { C, F, HT, L, WT, WTD, h } from '../../commonStyles/style-layout';
 import { Header, Loader, TouchableOpacity } from '../../components';
@@ -39,7 +40,26 @@ function MyJourney({ navigation, route }) {
         }
     }, [history]);
 
-    function onItemPress(item, type, rideTo, rideFrom) {
+    function getAddressFromCoordinates(latitude, longitude) {
+        try {
+            return new Promise((resolve, reject) => {
+                fetch(API.geocode + latitude + ',' + longitude + '&key=' + API.map_key
+                ).then(response => response.json()).then(responseJson => {
+                    if (responseJson.status === 'OK') {
+                        resolve(responseJson?.results?.[0]?.formatted_address);
+                    } else {
+                        reject("");
+                    }
+                }).catch(error => {
+                    reject(error);
+                });
+            });
+        } catch (error) {
+            console.log(error);
+            return ""
+        }
+    }
+    async function onItemPress(item, type, rideTo, rideFrom) {
         try {
             const startLocation = item?.start?.gps ?? ""
             const endLocation = item?.end?.gps ?? ""
@@ -64,6 +84,22 @@ function MyJourney({ navigation, route }) {
                 endLat = hasValue(end_lat ?? "") ? end_lat.toString() : ""
                 endLng = hasValue(end_lng ?? "") ? end_lng.toString() : ""
             }
+        
+            if(item?.type == "AUTO") {
+                const userGPS =  item?.userGPS
+                const startLocation = userGPS?.start?.split(',') 
+                const endLocation = userGPS?.end?.split(',') 
+                const startLat = startLocation?.[0]
+                const startLong = startLocation?.[1]
+                const endLat = endLocation?.[0]
+                const endLong = endLocation?.[1]
+                
+                const addressFrom = await getAddressFromCoordinates(startLat, startLong)
+                const addressTo = await getAddressFromCoordinates(endLat, endLong)
+                rideFrom = addressFrom
+                rideTo = addressTo
+            }
+       
             dispatch(searchRoutes({
                 "data": {
                     "start": sourceLat + "," + sourceLng,
@@ -222,7 +258,7 @@ function MyJourney({ navigation, route }) {
             }
         } else {
             tmp_track.push(item.details)
-            itemData = item.details
+            itemData = {...item.details, userGPS: item?.userGPS}
         }
         let rideTo = ""
         let rideFrom = ""
