@@ -85,7 +85,7 @@ function YourJourney({ navigation, route }) {
         React.useCallback(() => {
             const timer = setTimeout(() => {
                 getDistanceForRides();
-            },  1000 * 10);
+            },  1000 * 60);
             return () => clearTimeout(timer);
         }, [get_rides_distance, busBtn()]),
     );
