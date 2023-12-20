@@ -26,4 +26,5 @@ export const API = {
      get_ride_updates: `${BASE_URL}/v1/modal/update`,
      rides_status: `${BASE_URL}/v1/modal/rides/status`,
      bus_status: `${BASE_URL}/v1/modal/rides/bus/status`,
+     get_distance: "https://maps.googleapis.com/maps/api/directions/json"
 }

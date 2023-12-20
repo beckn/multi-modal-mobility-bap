@@ -16,6 +16,7 @@ import { cancelRide, getRideUpdates, ride_updates_state, current_ride_coordinate
 import { ride_status_state } from '../user/userSlice';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
+import moment from 'moment';
 STR = require('../../languages/strings');
 
 function ConfirmedRide({ navigation, route }) {
@@ -364,11 +365,11 @@ function ConfirmedRide({ navigation, route }) {
           const code = ride_updates?.code ?? "";
           if (code === "RIDE_IN_PROGRESS") {
             const startTime = responseDataMaster?.ride_updates?.details?.startTime ?? "";
-            const formattedStartTime = dateTime(startTime, null, "hh:mm A");
+            const formattedStartTime = moment.utc(startTime).format('hh:mm A');
             label = `Trip has started, ETA ${formattedStartTime}`;
           } else if (code === "RIDE_COMPLETED") {
             const endTime = responseDataMaster?.ride_updates?.details?.endTime ?? "";
-            const formattedEndTime = dateTime(endTime, null, "hh:mm A");
+            const formattedEndTime = moment.utc(endTime).format('hh:mm A');
             label = `Trip ended ${formattedEndTime}`;
           }
           return label;
