@@ -248,6 +248,10 @@ function YourJourney({ navigation, route }) {
         if(item.type == "AUTO"){
             setItemData(item)
         }
+
+        if(item?.type == "BUS" && item?.status == "COMPLETED" && completed_trips?.length == 1){
+            RootNavigation.replace("RateTrip")
+        }
        
         let status = false;
         completed_trips?.map((i) => {
@@ -432,6 +436,13 @@ function YourJourney({ navigation, route }) {
     }
     function busRideJourneyPopup(){
         const d = getDistance(startLocation,endLocation)
+        //For only bus
+        completed_trips?.map((i) => {
+            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && d == distanceInKM && completed_trips?.length == 1){
+                setBusRideView("pending")
+                setShowBusRideModal(true);
+            }
+        })
         //For bus+auto
         completed_trips?.map((i) => {
             if(i?.type == "BUS" && i?.status == "CONFIRMED" && d == distanceInKM && i?.step == 1){
