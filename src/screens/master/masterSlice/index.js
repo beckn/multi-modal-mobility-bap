@@ -349,6 +349,18 @@ export const busStatus = createAsyncThunk('master/busStatus', async (data, { dis
         dispatch(bus_status_state({}))
     })
 })
+export const getDistance = createAsyncThunk('master/getDistance', async ({originLatitude,originLongitude , destinationLatitude , destinationLongitude,}, { dispatch }) => {
+    await performPostRequest(API.get_distance + `?origin=${originLatitude},${originLongitude}&destination=${destinationLatitude},${destinationLongitude}&key=${API.map_key}`).then((res) => {
+        const apiResponse = responseHandler(res)
+        if (hasValue(apiResponse)) {
+            dispatch(get_distance_state({ get_distance: apiResponse?.data?.routes?.[0]?.legs ?? [] }))
+        } 
+        else {
+            dispatch(get_distance_state({}))
+        }
+    }
+    )
+})
 
 export const masterSlice = createSlice({
     name: 'master',
@@ -379,6 +391,7 @@ export const masterSlice = createSlice({
         rides_status: null,
         bus_status: null,
         isLoadingCancel: false,
+        get_distance: []
     },
     reducers: {
         clear_master_state: (state, action) => {
@@ -449,6 +462,9 @@ export const masterSlice = createSlice({
         cancel_ride_state: (state, action) => {
             state.isLoadingCancel = action?.payload?.isLoadingCancel ?? false
         },
+        get_distance_state: (state, action) => {
+            state.get_distance = action?.payload?.get_distance ?? []
+        }
     },
 })
 
@@ -470,4 +486,5 @@ export const {
     rides_status_state,
     bus_status_state,
     cancel_ride_state,
+    get_distance_state,
 } = masterSlice.actions

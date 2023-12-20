@@ -3,6 +3,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
     View, Text, FlatList, Image, ScrollView, Modal, Platform
 } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 import { Images } from '../../commonStyles/Images'
 import { C, F, HT, L, WT, h } from '../../commonStyles/style-layout';
 import { Header, Loader, TouchableOpacity, Button } from '../../components';
@@ -13,7 +14,7 @@ import { API } from '../../shared/API-end-points';
 import MapViewDirections from 'react-native-maps-directions';
 import RootNavigation from '../../Navigation/RootNavigation';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { busStatus, confirmRide, ridesStatus } from '../master/masterSlice';
+import { busStatus, confirmRide, ridesStatus , getDistance} from '../master/masterSlice';
 import { ride_status_state } from '../user/userSlice';
 STR = require('../../languages/strings');
 
@@ -31,6 +32,7 @@ function YourJourney({ navigation, route }) {
         longitudeDelta: API.LONGITUDE_DELTA,
     }
     const completed_trips = responseDataUser?.completed_trips ?? []
+    const get_rides_distance = responseDataMaster?.get_distance ?? []
     var mapRef = useRef(null);
     var markerRef = useRef(null);
     const [vehicleData, set_vehicleData] = useState([]);
@@ -43,26 +45,14 @@ function YourJourney({ navigation, route }) {
     const [showModal, setShowModal] = useState(false);
     const [showBusRideModal, setShowBusRideModal] = useState(false);
     const [modalConfirm, set_modalConfirm] = useState(false);
+    const [rideDistanceData, setRideDistanceData] = useState([]);
+    const [isCalled, setIsCalled] = useState(true);
 
-    const startLocation = {
-        latitude: 37.7749,
-        longitude: -122.4194,
-      };
-      const endLocation = {
-        latitude: 37.7751,
-        longitude: -122.4194, 
-      };
-      const startLocationOfAuto = {
-        latitude: -0.2295,
-        longitude: -78.5243,
-      };
-      const endLocationOfAuto = {
-        latitude: -0.2300,
-        longitude: -78.5063, 
-      };
-    const distanceInKM = 0.02223898532885992;
+    useEffect(()=>{
+        setBusRideView("no")
+        setIsCalled(true)
+    },[])
 
-     
     useFocusEffect(
         React.useCallback(() => {
             set_modalConfirm(false);
@@ -89,13 +79,102 @@ function YourJourney({ navigation, route }) {
 
     useEffect(() => {
         busRideJourneyPopup();
-    }, [rideDetails]);
+    }, [get_rides_distance]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const timer = setTimeout(() => {
+                getDistanceForRides();
+            },  1000 * 10);
+            return () => clearTimeout(timer);
+        }, [get_rides_distance, busBtn()]),
+    );
+
+    useEffect(() => {
+        try {
+            setRideDistanceData(get_rides_distance)
+        } catch (error) {
+            console.log(error);
+        }
+    }, [get_rides_distance]);
+
+    const getDistanceForRides = () => {
+        let originLatitude = -0.2295;  
+        let originLongitude = -78.5063;
+        let destinationLatitude = -0.2300;
+        let destinationLongitude = -78.5063;
+        let status = false;
+        Geolocation.getCurrentPosition((pos) => {
+            const crd = pos.coords;
+            console.log(crd,"crd")
+            originLatitude = crd?.latitude
+            originLongitude = crd?.longitude
+            //For bus alone
+            completed_trips?.map((i) => {
+                if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") &&  completed_trips?.length == 1){
+                    status = true
+                    const endLocation = i?.fulfillment?.end?.location?.gps
+                    const lat = endLocation?.split(",")[0]
+                    const long = endLocation?.split(",")[1]
+                    destinationLatitude = lat
+                    destinationLongitude = long
+                }
+              })
+            //For bus+auto
+            completed_trips?.map((i) => {
+                if(i?.type == "BUS" && i?.status == "CONFIRMED" &&  i?.step == 1){
+                    const endLocation = i?.fulfillment?.end?.location?.gps
+                    const lat = endLocation?.split(",")[0]
+                    const long = endLocation?.split(",")[1]
+                    destinationLatitude = lat
+                    destinationLongitude = long
+                    status = true
+                } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && i?.step == 1){
+                    const endLocation = i?.fulfillment?.end?.location?.gps
+                    const lat = endLocation?.split(",")[0]
+                    const long = endLocation?.split(",")[1]
+                    destinationLatitude = lat
+                    destinationLongitude = long
+                    status = true
+                    const autoData = completed_trips?.find((i)=>i?.type == "AUTO")
+                    if(autoData?.type == "AUTO" && autoData?.status == "SELECTED" && autoData?.step == 2){
+                        const endLocation = autoData?.fulfillment?.end?.location?.gps
+                        const lat = endLocation?.split(",")[0]
+                        const long = endLocation?.split(",")[1]
+                        destinationLatitude = lat
+                        destinationLongitude = long
+                        status = true
+                    }
+                }
+            })
+            // For auto+bus
+            completed_trips?.map((i) => {
+                if(i?.type == "AUTO" && i?.status == "COMPLETED"  && i?.step == 1){
+                    const busData = completed_trips?.find((i)=>i?.type == "BUS")
+                    console.log(busData,"bus data")
+                    if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 ){
+                        const endLocation = busData?.fulfillment?.end?.location?.gps
+                        const lat = endLocation?.split(",")[0]
+                        const long = endLocation?.split(",")[1]
+                        destinationLatitude = lat
+                        destinationLongitude = long
+                        status = true
+                    } 
+                } 
+            })
+            if(status && isCalled){
+                dispatch(getDistance({originLatitude, originLongitude, destinationLatitude, destinationLongitude, }))
+            }
+        })
+
+    };
 
     useEffect(() => {
         if (responseDataMaster.isLoading == true) {
             setShowBusRideModal(false)
+            setShowModal(false)
         }
-    }, [responseDataMaster.isLoading])
+    }, [responseDataMaster.isLoading]) 
 
     function setJourneyData() {
         try {
@@ -209,23 +288,6 @@ function YourJourney({ navigation, route }) {
             console.log(error);
         }
     }
-    const getDistance = (startLocation, endLocation) => {
-        const earthRadius = 6371;     
-        const toRadians = (angle) => {
-          return (angle * Math.PI) / 180;
-        };    
-        const dLat = toRadians(endLocation.latitude - startLocation.latitude);
-        const dLon = toRadians(endLocation.longitude - startLocation.longitude);
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(toRadians(startLocation.latitude)) *
-            Math.cos(toRadians(endLocation.latitude)) *
-            Math.sin(dLon / 2) *
-            Math.sin(dLon / 2); 
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = earthRadius * c; 
-        return distance;
-    };   
     const renderItem = (item, index) => {
         let image = item.type === "AUTO" ? Images.auto : Images.bus_full
         let title = item.type === "AUTO" ? "Auto details" : "Bus details"
@@ -418,37 +480,40 @@ function YourJourney({ navigation, route }) {
             }
             //For Bus+auto
             completed_trips?.map((i) => {
-                if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && i?.step == 1){
+                if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && i?.step == 1 ){   
                     status = true
                 } 
             })
             //For Auto+bus
             completed_trips?.map((i) => {
                 if(i?.type == "AUTO" && (i?.status == "COMPLETED") && i?.step == 1){
-                    status = true
+                    const busData = completed_trips?.find((i)=>i?.type == "BUS")
+                    if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2){
+                        status = true
+                    }
                 } 
             })
-             return status
+            return status
         } catch (error) {
             console.log(error);
             return false
         }
     }
     function busRideJourneyPopup(){
-        const d = getDistance(startLocation,endLocation)
+        if(rideDistanceData?.length > 0){
         //For only bus
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && d == distanceInKM && completed_trips?.length == 1){
+            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 2000 && completed_trips?.length == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
             }
         })
         //For bus+auto
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && i?.status == "CONFIRMED" && d == distanceInKM && i?.step == 1){
+            if(i?.type == "BUS" && i?.status == "CONFIRMED" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
-            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && d == distanceInKM && i?.step == 1){
+            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
                 const autoData = completed_trips?.find((i)=>i?.type == "AUTO")
@@ -461,25 +526,25 @@ function YourJourney({ navigation, route }) {
         })
         // For auto+bus
         completed_trips?.map((i) => {
-            if(i?.type == "AUTO" && i?.status == "COMPLETED" && d == distanceInKM && i?.step == 1){
+            if(i?.type == "AUTO" && i?.status == "COMPLETED"  && i?.step == 1){
+                setBusRideView('no')
                 const busData = completed_trips?.find((i)=>i?.type == "BUS")
                 console.log(busData,"bus data")
-                if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && d == distanceInKM){
-                    setShowBusRideModal("pending")
+                if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){
+                    setBusRideView("pending")
                     setShowBusRideModal(true);
-                } else {
-                    if(busData?.status != "COMPLETED" && busData?.step == 2){
-                        setBusRideView("no")
-                    }
-                    setShowBusRideModal(false)
                 }
             } 
         })
+
+        } else {
+            setBusRideView("no")
+        }
+
     }
     function autoJourneyPopup(){
-        const d = getDistance(startLocationOfAuto,endLocationOfAuto)
-        const distance =  parseFloat(d.toFixed(2))
-        if(distance == 2){
+        const distance =  rideDistanceData?.[0]?.duration?.value
+        if(distance <= 300){
             setShowModal(true)
         }
     }
@@ -503,7 +568,7 @@ function YourJourney({ navigation, route }) {
                 <View style={[C.bgWhite, L.card, C.brLight, L.br05, L.aiC, L.jcC, HT(150), L.dpARL, { bottom: 0 }]}>
                     <Text style={[C.fcBlack, F.ffM, L.taC, F.fsOne5]}>{journeyLabel()}</Text>
                     <View style={[HT(25)]} />
-                    <Button onPress={() => {onSubmit(quantity + 1); setBusRideView('pending') }} style={[WT('90%'), HT(45)]} label={"Yes"} />
+                    <Button onPress={() => {onSubmit(quantity + 1); setBusRideView('no');  setIsCalled(false)}} style={[WT('90%'), HT(45)]} label={"Yes"} />
                 </View>
             }
             {responseDataMaster.isLoading == true &&
@@ -544,6 +609,7 @@ function YourJourney({ navigation, route }) {
                         <View style={[L.even,L.aiC,L.jcSB,L.mT10]}>
                             <TouchableOpacity onPress={() => { 
                                setShowBusRideModal(false)
+                               setIsCalled(false)
                                setBusRideView("no")
                             }} style={[WT('45%'), HT(40), L.br05, C.brLightGray, L.jcC, L.aiC,]}>
                                 <Text style={[C.fcBlack,F.ffM, F.fsOne7]}>No</Text>
@@ -551,7 +617,9 @@ function YourJourney({ navigation, route }) {
                             <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
                              onPress={() => {
                                 setShowBusRideModal(false);
-                                onSubmit(quantity + 1)
+                                setIsCalled(false)
+                                setBusRideView("no")
+                                onSubmit(quantity + 1);
                              }}>
                                 <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
                             </TouchableOpacity>
@@ -590,6 +658,7 @@ function YourJourney({ navigation, route }) {
                             <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
                              onPress={() => {
                                  setShowModal(false)
+                                 setIsCalled(false)
                                  onItemPress(itemData , true)
                              }}>
                                 <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Book Now</Text>
