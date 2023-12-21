@@ -318,6 +318,15 @@ function YourJourney({ navigation, route }) {
         if(item?.type == "BUS" && item?.status == "COMPLETED" && completed_trips?.length == 1){
             RootNavigation.replace("RateTrip")
         }
+
+        if(completed_trips?.length == 2){
+            if(item?.type == "AUTO" && item?.status == "COMPLETED"  && item?.step == 1){
+                const busData = completed_trips?.find((i)=>i?.type == "BUS")
+                if(busData?.type == "BUS" && busData?.status == "COMPLETED" && busData?.step == 2){
+                    RootNavigation.replace("RateTrip")
+                }
+            } 
+        }
        
         let status = false;
         completed_trips?.map((i) => {
