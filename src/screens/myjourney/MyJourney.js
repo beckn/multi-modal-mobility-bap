@@ -84,8 +84,8 @@ function MyJourney({ navigation, route }) {
                 endLat = hasValue(end_lat ?? "") ? end_lat.toString() : ""
                 endLng = hasValue(end_lng ?? "") ? end_lng.toString() : ""
             }
-        
-            if(item?.type == "AUTO") {
+
+            if(item.hasOwnProperty('userGPS')) {
                 const userGPS =  item?.userGPS
                 const startLocation = userGPS?.start?.split(',') 
                 const endLocation = userGPS?.end?.split(',') 
@@ -139,9 +139,21 @@ function MyJourney({ navigation, route }) {
                     const tmpTime = hasValue(totalDuration) ? parseInt(totalDuration) : 0
                     const startTime = element?.startTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
 
-                    etd = element.type === "AUTO"?  dateTime(element?.details?.startTime, null, "hh:mm A") : element?.startTime  ?? moment().add(0, 'minutes').format('hh:mm A');
-                    eta = element.type === "AUTO"?  dateTime(element?.details?.endTime, null, "hh:mm A") : element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
-
+                    // etd = element.type === "AUTO" && select_route?.length == 1?  dateTime(element?.details?.startTime, null, "hh:mm A") : element?.startTime  ?? moment().add(0, 'minutes').format('hh:mm A');
+                    // eta = element.type === "AUTO" && select_route?.length == 1?  dateTime(element?.details?.endTime, null, "hh:mm A") : element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
+                    if(element?.type == "AUTO"&& select_route?.length == 1){
+                        etd = moment.utc(element?.details?.startTime).format("hh:mm A") ?? moment().add(0, 'minutes').format('hh:mm A');
+                        eta = moment.utc(element?.details?.endTime).format("hh:mm A") ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
+                    } else if (element?.type == "BUS" && select_route?.length == 1){
+                        etd = element?.details?.startTime  ?? moment().add(0, 'minutes').format('hh:mm A');
+                        eta = element?.details?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A')
+                    } else if (element.type === "AUTO") {
+                        etd = moment.utc(element.startTime).format("hh:mm A") ?? moment().add(0, 'minutes').format('hh:mm A');
+                        eta = moment.utc(element.endTime).format("hh:mm A") ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
+                    } else {
+                        etd = element?.startTime  ?? moment().add(0, 'minutes').format('hh:mm A');
+                        eta = element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
+                    }
                     let tmpJasonWalkStart = null
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
                         const tmpTime_durationFromStartPoint = hasValue(element.durationFromStartPoint) ? parseInt(element.durationFromStartPoint) : 0
@@ -163,7 +175,13 @@ function MyJourney({ navigation, route }) {
                         tmpArray.push(tmpJasonWalkStart)
                     }
                     const tmpTime2 = hasValue(select_route[i - 1]?.duration ?? "") ? parseInt(select_route[i - 1].duration) : 0
-                    let eta2 = select_route[i - 1]?.endTime ?? moment().add(tmpTime2, 'minutes').format('hh:mm A')
+                    // let eta2 = moment.utc(select_route[i - 1]?.endTime).format("hh:mm A") ?? moment().add(tmpTime2, 'minutes').format('hh:mm A')
+                    let eta2 = '';
+                    if (element.type === "BUS" && select_route[i - 1]?.type === "AUTO") {
+                        eta2 = moment.utc(select_route[i - 1]?.endTime).format("hh:mm A") ?? "";
+                      } else {
+                        eta2 = select_route[i - 1]?.endTime ?? moment().add(tmpTime2, 'minutes').format('hh:mm A');
+                      }
                     let walk_eta3 = ""
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
                         const tmpTime_durationFromStartPoint = hasValue(element.durationFromStartPoint) ? parseInt(element.durationFromStartPoint) : 0
@@ -211,6 +229,8 @@ function MyJourney({ navigation, route }) {
                             const tmpTime_durationToEndPoint = hasValue(element.durationToEndPoint) ? parseInt(element.durationToEndPoint) : 0
                             end_eta = moment(dateTime(eta, "hh:mm A", "")).add(tmpTime_durationToEndPoint, 'minutes').format('hh:mm A')
                         }
+                        const time_duration = hasValue(element.duration) ? parseInt(element.duration) : 0
+                        const etaForAuto = moment(etd, 'hh:mm A').add(time_duration, 'minutes').format('hh:mm A');
                         let tmpJasonEnd = {
                             address: hasValue(element?.distanceToEndPoint ?? "") ? element?.endPointAddress ?? "" : element?.end?.address?.ward ?? element?.end?.name ?? "",
                             vehicle: {
@@ -221,7 +241,7 @@ function MyJourney({ navigation, route }) {
                             distance: element?.distance ?? "",
                             duration: element?.duration ?? "",
                             status: element?.status ?? "",
-                            eta: end_eta,
+                            eta:  element?.type == "AUTO" && select_route?.length != 1 ? etaForAuto : end_eta,
                             walkingDistanceFromEndPoint: element?.distanceToEndPoint ?? "",
                             walkingDurationFromEndPoint: element?.durationToEndPoint ?? "",
                             icon: element?.type === "AUTO" ? Images.auto : Images.bus_full,
@@ -254,7 +274,7 @@ function MyJourney({ navigation, route }) {
             tmp_track = item.details
             itemData = item.details[0]
             if (item.details.length > 1) {
-                itemData = { ...item.details[0], endLocation: item.details[item.details.length - 1] }
+                itemData = { ...item.details[0], endLocation: item.details[item.details.length - 1] ,userGPS: item?.userGPS}
             }
         } else {
             tmp_track.push(item.details)
@@ -379,9 +399,9 @@ function MyJourney({ navigation, route }) {
                                                     <Text style={[C.fcBlack, F.ffB, F.fsOne5]} numberOfLines={1}>{element?.address ?? ""}</Text>
                                                 </View>
                                                 <Text style={[C.fcBlack, F.ffM, F.fsOne2]}>
-                                                    {hasValue(element?.eta ?? "") ? `ETA ${element?.eta}` : ""}
-                                                    {hasValue(element?.eta ?? "") && hasValue(element?.etd ?? "") && " | "}
-                                                    {hasValue(element?.etd ?? "") ? `ETD ${element?.etd}` : ""}
+                                                     {hasValue(element?.eta ?? "") ? `ETA ${element?.eta}` : ""}
+                                                     {hasValue(element?.eta ?? "") && hasValue(element?.etd ?? "") && " | "}
+                                                     {hasValue(element?.etd ?? "") ? `ETD ${element?.etd}` : ""}
                                                 </Text>
                                             </View>
                                         </View>
