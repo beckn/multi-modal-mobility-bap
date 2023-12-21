@@ -81,6 +81,10 @@ function YourJourney({ navigation, route }) {
         busRideJourneyPopup();
     }, [get_rides_distance]);
 
+    useEffect(()=>{
+        getDistanceForRides();
+    },[])
+
     useFocusEffect(
         React.useCallback(() => {
             const timer = setTimeout(() => {
@@ -503,17 +507,17 @@ function YourJourney({ navigation, route }) {
         if(rideDistanceData?.length > 0){
         //For only bus
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 2000 && completed_trips?.length == 1){
+            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 1397000 && completed_trips?.length == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
             }
         })
         //For bus+auto
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && i?.status == "CONFIRMED" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
+            if(i?.type == "BUS" && i?.status == "CONFIRMED" && rideDistanceData?.[0]?.distance?.value <= 1397000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
-            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
+            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 1397000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
                 const autoData = completed_trips?.find((i)=>i?.type == "AUTO")
@@ -530,7 +534,7 @@ function YourJourney({ navigation, route }) {
                 setBusRideView('no')
                 const busData = completed_trips?.find((i)=>i?.type == "BUS")
                 console.log(busData,"bus data")
-                if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){
+                if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 1397000){
                     setBusRideView("pending")
                     setShowBusRideModal(true);
                 }
