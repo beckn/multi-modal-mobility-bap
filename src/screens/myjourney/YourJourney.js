@@ -81,6 +81,10 @@ function YourJourney({ navigation, route }) {
         busRideJourneyPopup();
     }, [get_rides_distance]);
 
+    useEffect(()=>{
+        getDistanceForRides();
+    },[])
+
     useFocusEffect(
         React.useCallback(() => {
             const timer = setTimeout(() => {
