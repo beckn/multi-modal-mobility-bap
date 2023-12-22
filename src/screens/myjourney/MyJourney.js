@@ -67,8 +67,8 @@ function MyJourney({ navigation, route }) {
             const start_data = startLocation.split(",")
             const source_lat = parseFloat(start_data[0])
             const source_lng = parseFloat(start_data[1])
-            const sourceLat = hasValue(source_lat ?? "") ? source_lat.toString() : ""
-            const sourceLng = hasValue(source_lng ?? "") ? source_lng.toString() : ""
+            let sourceLat = hasValue(source_lat ?? "") ? source_lat.toString() : ""
+            let sourceLng = hasValue(source_lng ?? "") ? source_lng.toString() : ""
 
             let end_data = endLocation.split(",")
             let end_lat = parseFloat(end_data[0])
@@ -91,13 +91,17 @@ function MyJourney({ navigation, route }) {
                 const endLocation = userGPS?.end?.split(',') 
                 const startLat = startLocation?.[0]
                 const startLong = startLocation?.[1]
-                const endLat = endLocation?.[0]
+                const endLatitude = endLocation?.[0]
                 const endLong = endLocation?.[1]
                 
                 const addressFrom = await getAddressFromCoordinates(startLat, startLong)
-                const addressTo = await getAddressFromCoordinates(endLat, endLong)
+                const addressTo = await getAddressFromCoordinates(endLatitude, endLong)
                 rideFrom = addressFrom
                 rideTo = addressTo
+                sourceLat = startLat
+                sourceLng = startLong
+                endLat = endLatitude
+                endLng = endLong
             }
        
             dispatch(searchRoutes({
