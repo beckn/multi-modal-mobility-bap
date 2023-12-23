@@ -103,7 +103,7 @@ function MyJourney({ navigation, route }) {
                 endLat = endLatitude
                 endLng = endLong
             }
-       
+            
             dispatch(searchRoutes({
                 "data": {
                     "start": sourceLat + "," + sourceLng,
@@ -316,13 +316,13 @@ function MyJourney({ navigation, route }) {
                 <View style={[HT(3)]} />
                 <TouchableOpacity style={[WT('90%'), L.asC, L.even, L.jcSB, L.pV10]}
                     onPress={() => { setRoutes(item); setIsVisible(item) }}>
-                    <View style={[WT('80%')]}>
+                    <View style={[WT('60%')]}>
                         <Text style={[C.lColor, F.ffM, F.fsOne4, L.f1]}>{dateTime(item.createdAt, "", "ddd, DD MMM, HH:mm a")}</Text>
                         <Text style={[C.lColor, F.ffM, F.fsOne4, L.f1]}>Your ride to <Text style={[C.lColor, F.ffB, F.fsOne4, L.f1]}>{item.endLocation}</Text></Text>
                     </View>
 
                     {hasValue(vehicleData) && vehicleData.length > 0 &&
-                        <View style={[WT('20%'), L.asC, L.aiR]}>
+                        <View style={[WT('35%'), L.asC, L.aiR]}>
                             <FlatList
                                 style={[L.mT15]}
                                 horizontal={true}
@@ -339,7 +339,7 @@ function MyJourney({ navigation, route }) {
                                             {vehicleData.length > 1 && element_index != 0 &&
                                                 <Text style={[F.fsOne4, F.ffB, C.fcBlack, L.taC]}>{"  + "}</Text>
                                             }
-                                            <View style={[{ marginLeft: element?.distance ?? 0 }, HT(23), WT(23), C.bgWhite, L.card, C.brLight, L.br05, L.bR4, L.jcC, L.aiC]}>
+                                            <View style={[ HT(23), WT(23), C.bgWhite, L.card, C.brLight, L.br05, L.bR4, L.jcC, L.aiC]}>
                                                 <Image style={[HT(16), WT(16)]} source={element?.icon ?? ""} />
                                             </View>
                                         </View>
