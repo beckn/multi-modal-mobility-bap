@@ -307,7 +307,6 @@ export const ridesStatus = createAsyncThunk('master/ridesStatus', async (data, {
         if (hasValue(apiResponse)) {
             dispatch(rides_status_state({ rides_status: apiResponse?.data ?? null }))
             dispatch(completed_trips_state(apiResponse?.data[0]?.details ?? []))
-            
             const is_navigate = data?.navigate ?? null
             if (hasValue(is_navigate)) {
                 const ride_type = data?.payloads?.type ?? null
@@ -350,17 +349,17 @@ export const busStatus = createAsyncThunk('master/busStatus', async (data, { dis
     })
 })
 export const getDistance = createAsyncThunk('master/getDistance', async ({originLatitude,originLongitude , destinationLatitude , destinationLongitude,}, { dispatch }) => {
-            await performPostRequest(API.get_distance + `?origin=${originLatitude},${originLongitude}&destination=${destinationLatitude},${destinationLongitude}&key=${API.map_key}`).then((res) => {
-            const apiResponse = responseHandler(res)
-            if (hasValue(apiResponse)) {
-                dispatch(get_distance_state({ get_distance: apiResponse?.data?.routes?.[0]?.legs ?? [] }))
-            } 
-            else {
-                dispatch(get_distance_state({}))
-            }
+    await performPostRequest(API.get_distance + `?origin=${originLatitude},${originLongitude}&destination=${destinationLatitude},${destinationLongitude}&key=${API.map_key}`).then((res) => {
+        const apiResponse = responseHandler(res)
+        if (hasValue(apiResponse)) {
+            dispatch(get_distance_state({ get_distance: apiResponse?.data?.routes?.[0]?.legs ?? [] }))
+        } 
+        else {
+            dispatch(get_distance_state({}))
         }
-        )   
-    })
+    }
+    )
+})
 
 export const masterSlice = createSlice({
     name: 'master',
