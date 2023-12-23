@@ -307,7 +307,6 @@ export const ridesStatus = createAsyncThunk('master/ridesStatus', async (data, {
         if (hasValue(apiResponse)) {
             dispatch(rides_status_state({ rides_status: apiResponse?.data ?? null }))
             dispatch(completed_trips_state(apiResponse?.data[0]?.details ?? []))
-
             const is_navigate = data?.navigate ?? null
             if (hasValue(is_navigate)) {
                 const ride_type = data?.payloads?.type ?? null
@@ -316,7 +315,7 @@ export const ridesStatus = createAsyncThunk('master/ridesStatus', async (data, {
                         RootNavigation.navigate("TicketDetails", { itemData: data?.apiResponse ?? null })
                     }
                 } else {
-                    dispatch(ride_updates_state({}))
+                    // dispatch(ride_updates_state({}))
                     RootNavigation.navigate("ConfirmedRide", {
                         itemData: data?.apiResponse ?? null
                     })
