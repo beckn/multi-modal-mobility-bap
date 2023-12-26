@@ -110,7 +110,6 @@ function YourJourney({ navigation, route }) {
         let status = false;
         Geolocation.getCurrentPosition((pos) => {
             const crd = pos.coords;
-            console.log(crd,"crd")
             originLatitude = crd?.latitude
             originLongitude = crd?.longitude
             //For bus alone
@@ -155,7 +154,6 @@ function YourJourney({ navigation, route }) {
             completed_trips?.map((i) => {
                 if(i?.type == "AUTO" && i?.status == "COMPLETED"  && i?.step == 1){
                     const busData = completed_trips?.find((i)=>i?.type == "BUS")
-                    console.log(busData,"bus data")
                     if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 ){
                         const endLocation = busData?.fulfillment?.end?.location?.gps
                         const lat = endLocation?.split(",")[0]
@@ -329,13 +327,13 @@ function YourJourney({ navigation, route }) {
         }
        
         let status = false;
-        completed_trips?.map((i) => {
-            if(i?.type == "BUS" && i?.status !== "CONFIRMED"){
-                status = true
-            } else if(i?.type == "AUTO" && i?.status != "SELECTED"){
-                status = true
-            }
-        })
+            completed_trips?.map((i) => {
+                if(i?.type == "BUS" && i?.status !== "CONFIRMED"){
+                    status = true
+                } else if(i?.type == "AUTO" && i?.status != "SELECTED"){
+                    status = true
+                }
+            })
         return (
             <>
                 {currentRideId === item.id &&
@@ -516,17 +514,17 @@ function YourJourney({ navigation, route }) {
         if(rideDistanceData?.length > 0){
         //For only bus
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 1397000 && completed_trips?.length == 1){
+            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 2000 && completed_trips?.length == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
             }
         })
         //For bus+auto
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && i?.status == "CONFIRMED" && rideDistanceData?.[0]?.distance?.value <= 1397000 && i?.step == 1){
+            if(i?.type == "BUS" && i?.status == "CONFIRMED" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
-            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 1397000 && i?.step == 1){
+            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
                 const autoData = completed_trips?.find((i)=>i?.type == "AUTO")
@@ -543,7 +541,7 @@ function YourJourney({ navigation, route }) {
                 setBusRideView('no')
                 const busData = completed_trips?.find((i)=>i?.type == "BUS")
                 console.log(busData,"bus data")
-                if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 1397000){
+                if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){
                     setBusRideView("pending")
                     setShowBusRideModal(true);
                 }
@@ -629,9 +627,13 @@ function YourJourney({ navigation, route }) {
                             </TouchableOpacity>
                             <TouchableOpacity style={[WT("45%"), HT(40),  L.jcC, L.aiC, C.bgBlack]}
                              onPress={() => {
-                                setShowBusRideModal(false);
-                                setIsCalled(false)
+                                // setShowBusRideModal(false);
+                                // setIsCalled(false)
                                 setBusRideView("no")
+                                if(quantity == 0){
+                                    setShowBusRideModal(true)
+                                    getDistanceForRides();
+                                }
                                 onSubmit(quantity + 1);
                              }}>
                                 <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Yes</Text>
@@ -672,6 +674,7 @@ function YourJourney({ navigation, route }) {
                              onPress={() => {
                                  setShowModal(false)
                                  setIsCalled(false)
+                                 setBusRideView("no")
                                  onItemPress(itemData , true)
                              }}>
                                 <Text style={[C.fcWhite, F.ffM, F.fsOne7]}>Book Now</Text>
