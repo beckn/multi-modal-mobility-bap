@@ -91,7 +91,7 @@ function YourJourney({ navigation, route }) {
                 getDistanceForRides();
             },  1000 * 60);
             return () => clearTimeout(timer);
-        }, [get_rides_distance, busBtn()]),
+        }, [get_rides_distance, busBtn(), rides_status,ride_updates]),
     );
 
     useEffect(() => {
@@ -255,6 +255,20 @@ function YourJourney({ navigation, route }) {
     }
     function onItemPress(item , isBookAuto) {
         try {
+            if(completed_trips?.length == 3){
+                const secondBusInProgressOrCompleted = completed_trips.find((i) => i.type === "BUS" && (i.status === "IN_PROGRESS" || i.status === "COMPLETED") && i?.step == 2);
+                if(secondBusInProgressOrCompleted){
+                    if(item?.type === "AUTO" && item?.status !== "SELECTED" && item?.step == 3){
+                        isBookAuto = true
+                    } 
+                } else {
+                    if(item?.type == "AUTO" && item?.step == 1){
+                        isBookAuto = true
+                    } else {
+                        isBookAuto = false
+                    }
+                }
+            }
             if (item.type === "AUTO" && isBookAuto) {
                 if (item.status != "SELECTED") {
                     if (item.status === "COMPLETED") {
@@ -277,12 +291,14 @@ function YourJourney({ navigation, route }) {
                     }
                 }
             } else {
-                if (item.status === "CONFIRMED") {
-                    RootNavigation.navigate("TicketDetails", { itemData: item })
-                } else if (item.status === "IN_PROGRESS") {
-                    RootNavigation.navigate("TicketDetails", { itemData: item })
-                } else if (item.status === "COMPLETED") {
-                    RootNavigation.navigate("TicketDetails", { itemData: item })
+                if(item?.type == "BUS"){
+                    if (item.status === "CONFIRMED") {
+                        RootNavigation.navigate("TicketDetails", { itemData: item })
+                    } else if (item.status === "IN_PROGRESS") {
+                        RootNavigation.navigate("TicketDetails", { itemData: item })
+                    } else if (item.status === "COMPLETED") {
+                        RootNavigation.navigate("TicketDetails", { itemData: item })
+                    }
                 }
             }
 
