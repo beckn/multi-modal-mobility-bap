@@ -64,6 +64,7 @@ function YourJourney({ navigation, route }) {
 
     useFocusEffect(
         React.useCallback(() => {
+            getDistanceForRides();
             dispatch(ridesStatus({}))
             return () => { };
         }, []),
@@ -162,6 +163,29 @@ function YourJourney({ navigation, route }) {
                         destinationLongitude = long
                         status = true
                     } 
+                } 
+            })
+            //For auto-bus-auto
+            completed_trips?.map((i) => {
+                if(i?.type == "AUTO" && i?.status == "COMPLETED"  && i?.step == 1){
+                    const busData = completed_trips?.find((i)=>i?.type == "BUS")
+                    if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2){
+                        const endLocation = busData?.fulfillment?.end?.location?.gps
+                        const lat = endLocation?.split(",")[0]
+                        const long = endLocation?.split(",")[1]
+                        destinationLatitude = lat
+                        destinationLongitude = long
+                        status = true
+                        const autoData = completed_trips?.find((i)=>i?.type == "AUTO" && i?.step == 3)
+                        if(autoData?.type == "AUTO" && autoData?.status == "SELECTED" && autoData?.step == 3){
+                            const endLocation = autoData?.fulfillment?.end?.location?.gps
+                            const lat = endLocation?.split(",")[0]
+                            const long = endLocation?.split(",")[1]
+                            destinationLatitude = lat
+                            destinationLongitude = long
+                            status = true
+                        }
+                    }
                 } 
             })
             if(status && isCalled){
@@ -325,7 +349,7 @@ function YourJourney({ navigation, route }) {
         } else if (item.status === "FAILED") {
             sub_title = "Ride failed"
         }
-        if(item.type == "AUTO"){
+        if(item.type == "AUTO" && item?.status != "COMPLETED"){
             setItemData(item)
         }
 
