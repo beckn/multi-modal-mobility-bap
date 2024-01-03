@@ -106,7 +106,7 @@ export const confirmRide = createAsyncThunk('master/confirmRide', async (data, {
             let payloads = null
             for (let index = 0; index < completed_trips.length; index++) {
                 const element = completed_trips[index];
-                if (element.status === "SELECTED") {
+                if (element.status === "SELECTED" && (index == 2 && completed_trips?.length == 3 ? (element.type != "AUTO" || data?.apiCall) : true)) {
                     payloads = element
                     break;
                 }
@@ -114,10 +114,10 @@ export const confirmRide = createAsyncThunk('master/confirmRide', async (data, {
             for (let index = 0; index < completed_trips.length; index++) {
                 const element = completed_trips[index];
                 const element_first = completed_trips[0];
-                if (element_first.status === "SELECTED") {
+                if (element_first.status === "SELECTED" && payloads) {
                     dispatch(setCurrentRoute(payloads))
                     break;
-                } else if (element.status === "CONFIRMED" || element.status === "IN_PROGRESS") {
+                } else if ((element.status === "CONFIRMED" || element.status === "IN_PROGRESS") && payloads) {
                     dispatch(setCurrentRoute(payloads))
                     break;
                 }
@@ -257,6 +257,7 @@ export const addRating = createAsyncThunk('master/addRating', async (data, { dis
 export const getRideUpdates = createAsyncThunk('master/getRideUpdates', async (data, { dispatch }) => {
     const ride_updates = store?.getState()?.master?.ride_updates ?? null
     const rides_status = store?.getState()?.master?.rides_status ?? null
+    const completed_trips = store?.getState()?.user?.completed_trips ?? null
     dispatch(ride_updates_state({ isLoading: false, ride_updates: ride_updates }))
     const cancel = data?.cancel ?? null
     if (hasValue(cancel)) {
@@ -264,7 +265,7 @@ export const getRideUpdates = createAsyncThunk('master/getRideUpdates', async (d
         return
     }
     const ride_code = ride_updates?.descriptor?.code ?? null
-    if (ride_code === "RIDE_COMPLETED") {
+    if (ride_code === "RIDE_COMPLETED" && completed_trips?.length != 3) {
         return
     }
     await performPostRequest(API.get_ride_updates, data).then((res) => {
