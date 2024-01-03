@@ -307,7 +307,7 @@ function YourJourney({ navigation, route }) {
                 } else {
                     if (isCompletedTrip(0)) {
                         set_modalConfirm(true)
-                        dispatch(confirmRide({}))
+                        dispatch(confirmRide({apiCall: true}))
                     } else {
                         setShowBusRideModal(false)
                         setShowModal(false)
@@ -580,7 +580,6 @@ function YourJourney({ navigation, route }) {
             if(i?.type == "AUTO" && i?.status == "COMPLETED"  && i?.step == 1){
                 setBusRideView('no')
                 const busData = completed_trips?.find((i)=>i?.type == "BUS")
-                console.log(busData,"bus data")
                 if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){
                     setBusRideView("pending")
                     setShowBusRideModal(true);
@@ -592,7 +591,6 @@ function YourJourney({ navigation, route }) {
             if(i?.type == "AUTO" && i?.status == "COMPLETED"  && i?.step == 1){
                 setBusRideView('no')
                 const busData = completed_trips?.find((i)=>i?.type == "BUS")
-                console.log(busData,"bus data")
                 if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){
                     const autoData = completed_trips?.find((i)=>i?.type == "AUTO" && i?.step == 3)
                     if(autoData?.type == "AUTO" && autoData?.status == "SELECTED" && autoData?.step == 3){
