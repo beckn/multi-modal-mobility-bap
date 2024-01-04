@@ -124,7 +124,7 @@ function ConfirmedRide({ navigation, route }) {
                     setDestinationCoordinates();
                     dispatch(getRideUpdates({
                         "routeId": rides_status[0].routeId,
-                        "order_id": itemData?.order_id ?? payloads?.order_id ?? ""
+                        "order_id": confirm_ride?.order_id ?? payloads?.order_id ?? ""
                     }))
                 }
             }
