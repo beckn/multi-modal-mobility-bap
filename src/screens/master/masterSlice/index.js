@@ -317,6 +317,7 @@ export const ridesStatus = createAsyncThunk('master/ridesStatus', async (data, {
                     }
                 } else {
                     // dispatch(ride_updates_state({}))
+                    dispatch(setCurrentRoute(data?.payloads))
                     RootNavigation.navigate("ConfirmedRide", {
                         itemData: data?.apiResponse ?? null
                     })
