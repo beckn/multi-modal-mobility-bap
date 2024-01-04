@@ -94,6 +94,7 @@ function ConfirmedRide({ navigation, route }) {
                     if (element.type === "AUTO") {
                         if (element.status === "CONFIRMED") {
                             setRideDetails(element)
+                            setDestinationCoordinates();
                             break;
                         }
                     }
