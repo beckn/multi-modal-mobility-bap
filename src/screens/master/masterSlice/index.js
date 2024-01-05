@@ -128,6 +128,9 @@ export const confirmRide = createAsyncThunk('master/confirmRide', async (data, {
             await performPostRequest(API.confirm_ride, payloads).then((res) => {
                 const apiResponse = responseHandler(res)
                 if (hasValue(apiResponse)) {
+                    dispatch(confirm_ride_state({
+                        confirm_ride: apiResponse?.data ?? null
+                    }))
                     dispatch(ridesStatus({
                         navigate: "navigate",
                         payloads: payloads,
@@ -136,9 +139,6 @@ export const confirmRide = createAsyncThunk('master/confirmRide', async (data, {
                     }))
                     dispatch(ride_status_state({ ride_status: "RIDE_ASSIGNED" }))
                     dispatch(ride_vehicle_state({ ride_vehicle: payloads?.type ?? null }))
-                    dispatch(confirm_ride_state({
-                        confirm_ride: apiResponse?.data ?? null
-                    }))
                 } else {
                     dispatch(confirm_ride_state({}))
                 }

@@ -24,7 +24,7 @@ function RideCompleted({ navigation, route }) {
     const itemData = route.params?.itemData ?? null;
     const confirm_ride = responseDataMaster?.confirm_ride ?? null
     const select_route = responseDataMaster?.select_route ?? null
-    const ride_updates = responseDataMaster?.ride_updates ?? null
+    const rideUpdates = responseDataMaster?.ride_updates ?? null
     const agent = confirm_ride?.fulfillment?.agent ?? {}
     const vehicle_state = confirm_ride?.fulfillment?.state?.descriptor ?? {}
     const vehicle_detail = confirm_ride?.fulfillment?.vehicle ?? {}
@@ -32,6 +32,7 @@ function RideCompleted({ navigation, route }) {
     const [modalCancel, set_modalCancel] = useState(false);
     const [cancelReason, set_cancelReason] = useState("");
     const [modalConfirm, set_modalConfirm] = useState(false);
+    const [ride_updates, set_ride_updates] = useState();
     const [source_lat_lng, set_source_lat_lng] = useState({
         latitude: API.LATITUDE,
         longitude: API.LONGITUDE,
@@ -64,6 +65,14 @@ function RideCompleted({ navigation, route }) {
             };
         }, []),
     );
+
+    useEffect(()=>{
+        if(rideUpdates?.descriptor?.code == "RIDE_COMPLETED"){
+            set_ride_updates(rideUpdates)
+        } else {
+            set_ride_updates(ride_updates)
+        }
+    },[rideUpdates])
 
     useEffect(() => {
         try {
