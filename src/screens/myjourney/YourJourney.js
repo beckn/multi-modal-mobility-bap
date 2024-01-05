@@ -153,7 +153,7 @@ function YourJourney({ navigation, route }) {
             })
             // For auto+bus
             completed_trips?.map((i) => {
-                if(i?.type == "AUTO" && (i?.status == "COMPLETED") && i?.step == 1){
+                if(i?.type == "AUTO" && i?.status == "COMPLETED" && i?.step == 1){
                     const busData = completed_trips?.find((i)=>i?.type == "BUS")
                     if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 ){
                         const endLocation = busData?.fulfillment?.end?.location?.gps
@@ -168,7 +168,7 @@ function YourJourney({ navigation, route }) {
             //For auto-bus-auto
             if(completed_trips?.length == 3){
                 completed_trips?.map((i) => {
-                    if(i?.type == "AUTO" && (i?.status == "COMPLETED")  && i?.step == 1){
+                    if(i?.type == "AUTO" && i?.status == "COMPLETED" && i?.step == 1){
                         const busData = completed_trips?.find((i)=>i?.type == "BUS")
                         if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2){
                             const endLocation = busData?.fulfillment?.end?.location?.gps
@@ -539,7 +539,7 @@ function YourJourney({ navigation, route }) {
             })
             //For Auto+bus
             completed_trips?.map((i) => {
-                if(i?.type == "AUTO" && (i?.status == "COMPLETED" || i?.status == "IN_PROGRESS") && i?.step == 1){
+                if(i?.type == "AUTO" && i?.status == "COMPLETED" && i?.step == 1){
                     const busData = completed_trips?.find((i)=>i?.type == "BUS")
                     if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2){
                         status = true
@@ -579,7 +579,7 @@ function YourJourney({ navigation, route }) {
         })
         // For auto+bus
         completed_trips?.map((i) => {
-            if(i?.type == "AUTO" && (i?.status == "COMPLETED") && i?.step == 1){
+            if(i?.type == "AUTO" && i?.status == "COMPLETED" && i?.step == 1){
                 setBusRideView('no')
                 const busData = completed_trips?.find((i)=>i?.type == "BUS")
                 if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){
@@ -591,7 +591,7 @@ function YourJourney({ navigation, route }) {
         // For auto-bus-auto
         if(completed_trips?.length == 3){
             completed_trips?.map((i) => {
-                if(i?.type == "AUTO" && (i?.status == "COMPLETED")  && i?.step == 1){
+                if(i?.type == "AUTO" && i?.status == "COMPLETED" && i?.step == 1){
                     setBusRideView('no')
                     const busData = completed_trips?.find((i)=>i?.type == "BUS")
                     if(busData?.type == "BUS" && (busData?.status == "CONFIRMED" || busData?.status == "IN_PROGRESS") && busData?.step == 2 && rideDistanceData?.[0]?.distance?.value <= 2000){

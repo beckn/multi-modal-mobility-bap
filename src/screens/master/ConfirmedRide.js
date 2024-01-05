@@ -65,8 +65,8 @@ function ConfirmedRide({ navigation, route }) {
 
     useFocusEffect(
         React.useCallback(() => {
-            fetchRideStatus();
             dispatch(ridesStatus({}))
+            fetchRideStatus()
             return () => { };
         }, []),
     );
