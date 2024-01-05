@@ -566,7 +566,7 @@ function YourJourney({ navigation, route }) {
             if(i?.type == "BUS" && i?.status == "CONFIRMED" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
-            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 222000 && i?.step == 1){
+            } else if (i?.type == "BUS" && i?.status == "IN_PROGRESS" && rideDistanceData?.[0]?.distance?.value <= 2000 && i?.step == 1){
                 const autoData = completed_trips?.find((i)=>i?.type == "AUTO")
                 if(autoData?.type == "AUTO" && autoData?.status == "SELECTED" && autoData?.step == 2){
                     autoJourneyPopup();
