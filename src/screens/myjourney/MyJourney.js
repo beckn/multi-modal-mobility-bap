@@ -159,6 +159,9 @@ function MyJourney({ navigation, route }) {
                         eta = element?.endTime ?? moment().add(tmpTime, 'minutes').format('hh:mm A');
                     }
                     let tmpJasonWalkStart = null
+                    if(element?.type == "BUS" && select_route?.length == 1){
+                        element = element?.details
+                    }
                     if (hasValue(element?.distanceFromStartPoint ?? "") && element.distanceFromStartPoint != 0 && hasValue(element?.durationFromStartPoint ?? "") && element.durationFromStartPoint != 0) {
                         const tmpTime_durationFromStartPoint = hasValue(element.durationFromStartPoint) ? parseInt(element.durationFromStartPoint) : 0
                         let walk_eta = moment().add(tmpTime_durationFromStartPoint, 'minutes').format('hh:mm A')
