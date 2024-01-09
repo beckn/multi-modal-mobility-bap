@@ -2,7 +2,7 @@ import { BASE_URL } from "./app-setting";
 
 export const API = {
      BASE_URL: BASE_URL,
-     TIMEOUT: 3000,
+     TIMEOUT: 30000,
      map_key: "AIzaSyB6XW-WRFTFqOx05Xwi2Ek5ygSGnbyLVsQ",
      LATITUDE: 20.5937,
      LONGITUDE: 78.9629,

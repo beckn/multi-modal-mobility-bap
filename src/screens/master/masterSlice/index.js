@@ -302,8 +302,9 @@ export const getRideUpdates = createAsyncThunk('master/getRideUpdates', async (d
 })
 export const ridesStatus = createAsyncThunk('master/ridesStatus', async (data, { dispatch }) => {
     // const rides_status = store?.getState()?.master?.rides_status ?? null
-    dispatch(rides_status_state({ isLoading: data?.isLoading ?? true }))
+    // dispatch(rides_status_state({ isLoading: data?.isLoading ?? true }))
     await performGetRequest(API.rides_status, data).then((res) => {
+        dispatch(rides_status_state({ isLoading: false }))
         const apiResponse = responseHandler(res)
         if (hasValue(apiResponse)) {
             dispatch(rides_status_state({ rides_status: apiResponse?.data ?? null }))
