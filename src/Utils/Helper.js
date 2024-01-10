@@ -184,6 +184,7 @@ export const isCompletedTrip = (flag) => {
   try {
     let status = false
     const items = store?.getState()?.user?.completed_trips ?? []
+    const itemIndex = store?.getState()?.master?.get_item_index ?? null
     if (hasValue(items) && items.length > 0) {
       let is_find = null
       for (let index = 0; index < items.length; index++) {
@@ -192,6 +193,9 @@ export const isCompletedTrip = (flag) => {
           if (element.status === "SELECTED" || element.status === "CONFIRMED" || element.status === "IN_PROGRESS" || element.status === "FAILED") {
             is_find = element
             break;
+          } else if(itemIndex != items?.length - 1 && element?.status == "COMPLETED" && element?.type == "AUTO" ){
+            is_find = element
+            break;          
           }
         } else {
           if (element.status === "SELECTED") {
