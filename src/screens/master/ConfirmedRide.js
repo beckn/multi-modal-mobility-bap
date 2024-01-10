@@ -96,7 +96,7 @@ function ConfirmedRide({ navigation, route }) {
                     if (element.type === "AUTO") {
                         if (element.status === "CONFIRMED") {
                             setRideDetails(element)
-                            setDestinationCoordinates();
+                            // setDestinationCoordinates();
                             break;
                         }
                     }
@@ -123,7 +123,7 @@ function ConfirmedRide({ navigation, route }) {
                             }
                         }
                     }
-                    setDestinationCoordinates();
+                    // setDestinationCoordinates();
                     dispatch(getRideUpdates({
                         "routeId": rides_status[0].routeId,
                         "order_id": confirm_ride?.order_id ?? payloads?.order_id ?? ""
