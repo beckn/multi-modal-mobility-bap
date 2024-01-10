@@ -65,10 +65,12 @@ function ConfirmedRide({ navigation, route }) {
 
     useFocusEffect(
         React.useCallback(() => {
-            dispatch(ridesStatus({}))
-            fetchRideStatus()
+            if(confirm_ride?.type == "AUTO"){
+                fetchRideStatus()
+                dispatch(ridesStatus({}))
+            }
             return () => { };
-        }, []),
+        }, [confirm_ride]),
     );
 
     // useFocusEffect(
