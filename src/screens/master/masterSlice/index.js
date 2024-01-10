@@ -393,7 +393,8 @@ export const masterSlice = createSlice({
         rides_status: null,
         bus_status: null,
         isLoadingCancel: false,
-        get_distance: []
+        get_distance: [],
+        get_item_index: null,
     },
     reducers: {
         clear_master_state: (state, action) => {
@@ -466,6 +467,9 @@ export const masterSlice = createSlice({
         },
         get_distance_state: (state, action) => {
             state.get_distance = action?.payload?.get_distance ?? []
+        },
+        get_item_index_state: (state, action) => {
+            state.get_item_index = action?.payload?.get_item_index ?? null
         }
     },
 })
@@ -489,4 +493,5 @@ export const {
     bus_status_state,
     cancel_ride_state,
     get_distance_state,
+    get_item_index_state
 } = masterSlice.actions

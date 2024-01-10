@@ -14,7 +14,7 @@ import { API } from '../../shared/API-end-points';
 import MapViewDirections from 'react-native-maps-directions';
 import RootNavigation from '../../Navigation/RootNavigation';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { busStatus, confirmRide, ridesStatus , getDistance} from '../master/masterSlice';
+import { busStatus, confirmRide, ridesStatus , getDistance, get_item_index_state} from '../master/masterSlice';
 import { ride_status_state } from '../user/userSlice';
 STR = require('../../languages/strings');
 
@@ -279,7 +279,7 @@ function YourJourney({ navigation, route }) {
             console.log(error);
         }
     }
-    function onItemPress(item , isBookAuto) {
+    function onItemPress(item , isBookAuto, index) {
         try {
             if(completed_trips?.length == 3){
                 const secondBusInProgressOrCompleted = completed_trips.find((i) => i.type === "BUS" && (i.status === "IN_PROGRESS" || i.status === "COMPLETED") && i?.step == 2);
@@ -300,10 +300,12 @@ function YourJourney({ navigation, route }) {
                     if (item.status === "COMPLETED") {
                         setShowModal(false);
                         setShowBusRideModal(false);
+                        dispatch(get_item_index_state({get_item_index: index}))
                         RootNavigation.navigate("RideCompleted", { itemData: item })
                     } else {
                         setShowModal(false);
                         setShowBusRideModal(false);
+                        dispatch(get_item_index_state({get_item_index: index}))
                         RootNavigation.navigate("ConfirmedRide", { itemData: item })
                     }
                 } else {
@@ -426,7 +428,7 @@ function YourJourney({ navigation, route }) {
                     </View>
                 }
                 <TouchableOpacity style={[WT('100%'), HT(70), L.jcC, C.bgWhite, L.card, L.mB3]}
-                    onPress={() => { onItemPress(item, status) }}>
+                    onPress={() => { onItemPress(item, status, index) }}>
                     <View style={[WT('100%'), L.pV10, L.pH10, L.even, L.aiC, L.jcSB]}>
                         <View style={[WT('50%'), L.even, L.aiC]}>
                             <View style={[HT(25), WT(30), L.bR4, L.jcC, L.aiC, C.bgWhite, L.card, C.brLight, L.br05]}>
