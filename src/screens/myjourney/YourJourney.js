@@ -558,7 +558,7 @@ function YourJourney({ navigation, route }) {
         if(rideDistanceData?.length > 0){
         //For only bus
         completed_trips?.map((i) => {
-            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 221600 && completed_trips?.length == 1){
+            if(i?.type == "BUS" && (i?.status == "CONFIRMED" || i?.status == "IN_PROGRESS") && rideDistanceData?.[0]?.distance?.value <= 2000 && completed_trips?.length == 1){
                 setBusRideView("pending")
                 setShowBusRideModal(true);
             }
