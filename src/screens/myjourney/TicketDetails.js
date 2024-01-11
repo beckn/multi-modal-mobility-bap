@@ -178,14 +178,14 @@ function TicketDetails({ navigation, route }) {
                         <View style={[WT(100), HT(1.5), C.bgVLGray]} />
                         <Text style={[C.lColor, F.ffM, F.fsOne2, L.mT2]}>Bus No. {ticketDetail?.vehicleNo ?? ""}</Text>
                     </View>
-                    {/* <View style={[WT('40%'), L.aiR]}>
+                    <View style={[WT('40%'), L.aiR]}>
                         <TouchableOpacity onPress={() => { openMap() }}>
                             <Image style={[WT(20), HT(20)]} source={Images.location} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => RootNavigation.navigate("TicketValid", { itemData: ticketDetail })}>
+                        {/* <TouchableOpacity onPress={() => RootNavigation.navigate("TicketValid", { itemData: ticketDetail })}>
                             <Text style={[C.fcBlue, F.ffM, F.fsOne2, L.mT2]}>Upcoming buses {" >"}</Text>
-                        </TouchableOpacity>
-                    </View> */}
+                        </TouchableOpacity> */}
+                    </View>
                 </View>
                 <View style={[WT('100%'), HT(3), C.bgLGray]} />
                 <View style={[WT('100%'), L.pH10, L.even, L.aiC, L.jcSB, L.pV15]}>
