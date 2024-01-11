@@ -182,7 +182,7 @@ function ConfirmedRide({ navigation, route }) {
 
     function setDestinationCoordinates() {
         try {
-            if (hasValue(confirm_ride)) {
+            if (hasValue(confirm_ride) && confirm_ride?.type == "AUTO") {
                 const startLocation = confirm_ride?.fulfillment?.start?.location?.gps ?? region
                 const endLocation = confirm_ride?.fulfillment?.end?.location?.gps ?? region
                 var start_data = startLocation.split(",")
