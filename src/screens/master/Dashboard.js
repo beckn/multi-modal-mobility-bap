@@ -577,7 +577,7 @@ function Dashboard({ navigation }) {
                             onPress={() => { onDestinationInput(); set_search_value(destination_location) }}>
                             <View style={[WT('90%'),]}>
                                 <TextField
-                                    style={[WT('100%'), C.lColor, F.ffB, { top: Platform.OS === 'ios' ? 15 : 0 }]}
+                                    style={[WT('100%'), C.lColor, F.ffB, { top: 0 }]}
                                     // style={[HT(50), WT('100%'), C.lColor, F.ffB]}
                                     placeholder={STR.strings.where_do_you_want_to_go}
                                     value={destination_location}
@@ -587,9 +587,9 @@ function Dashboard({ navigation }) {
                                     onChangeText={text => { set_destination_location(text) }}
                                 />
                             </View>
-                            <TouchableOpacity style={[WT('10%'), L.aiR, HT(50), L.jcC]}>
+                            <View style={[WT('10%'), L.aiR, HT(50), L.jcC]}>
                                 <Icon name={"magnify"} size={22} color={C.gray400} />
-                            </TouchableOpacity>
+                            </View>
                         </TouchableOpacity>
                     </View>
                 </View>
