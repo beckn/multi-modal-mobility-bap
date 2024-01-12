@@ -232,13 +232,13 @@ function ConfirmedRide({ navigation, route }) {
                 Geolocation.watchPosition(async (pos) => {
                     const crd = pos.coords;
                     const location_data = {
-                        latitude: crd.latitude,
-                        longitude: crd.longitude,
+                        latitude: source_lat ?? crd.latitude,
+                        longitude: source_lng ?? crd.longitude,
                         latitudeDelta: API.LATITUDE_DELTA,
                         longitudeDelta: API.LONGITUDE_DELTA,
                         icon: confirm_ride?.type === "AUTO" ? Images.auto_marker : Images.bus_marker
                     }
-                    setZoomLevel(crd)
+                    setZoomLevel(location_data)
                     let tmp_routeCoordinates = [
                         location_data,
                         {
